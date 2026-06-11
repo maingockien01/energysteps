@@ -119,6 +119,12 @@ export default function SignUpPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-md">
         <header className="mb-8 text-center">
+          <img
+            src="/AMZ_Time_2026.png"
+            alt=""
+            aria-hidden
+            className="mx-auto mb-4 h-40 w-auto drop-shadow-sm"
+          />
           <h1 className="text-2xl font-bold tracking-tight text-brand">
             {t("signup.title")}
           </h1>
