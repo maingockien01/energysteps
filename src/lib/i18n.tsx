@@ -286,6 +286,86 @@ const vi: Dict = {
   "gate.pin": "Mã PIN",
   "gate.enter": "Vào",
   "gate.wrong": "Mã PIN không đúng.",
+  "gate.checking": "Đang kiểm tra…",
+
+  // Errors (added)
+  "error.UNDO_NOT_APPLICABLE": "Không thể hoàn tác thao tác này.",
+
+  // Nav / tabs (added)
+  "nav.leaderboard": "Bảng xếp hạng",
+  "mod.tab.dashboard": "Tổng quan",
+  "notfound.title": "Không tìm thấy trang.",
+  "notfound.link": "Về trang đăng ký",
+
+  // Waitlist (P0-2)
+  "confirm.waitlist.title": "Bạn đang trong danh sách chờ",
+  "confirm.waitlist.body":
+    "Dự kiến lượt của bạn vượt quá thời gian kết thúc sự kiện, nên suất này chưa được đảm bảo. Nếu có người vắng mặt hoặc bỏ lượt, chúng tôi sẽ tự động xác nhận suất cho bạn — hãy theo dõi trang trạng thái.",
+  "status.waitlist.tag": "Danh sách chờ",
+  "status.waitlist.body":
+    "Suất của bạn chưa được đảm bảo do dự kiến vượt thời gian kết thúc. Chúng tôi sẽ xác nhận nếu có chỗ trống.",
+
+  // Post-run (P2-1)
+  "status.finished.title": "Bạn đã hoàn thành!",
+  "status.finished.gift": "Quà của bạn: {gift}",
+  "status.finished.leaderboard": "Xem bảng xếp hạng →",
+
+  // Leaderboard (P1-5)
+  "lb.title": "EnergySteps — Bảng xếp hạng",
+  "lb.subtitle": "Xếp hạng theo quãng đường đã chạy.",
+  "lb.individuals": "Cá nhân",
+  "lb.departments": "Theo khối/phòng",
+  "lb.finishers": "{n} người hoàn thành",
+  "lb.meters": "{n} m",
+  "lb.empty": "Chưa có ai hoàn thành. Hãy quay lại sau!",
+
+  // Config — capacity (P0-2)
+  "cfg.endTime": "Thời gian kết thúc sự kiện",
+  "cfg.endHint":
+    "Dùng để xác định sức chứa — ai có dự kiến hoàn thành sau giờ này sẽ vào danh sách chờ.",
+  "cfg.capacityTitle": "Sức chứa",
+  "cfg.capPromised": "Đã đảm bảo suất",
+  "cfg.capWaitlisted": "Danh sách chờ",
+  "cfg.capWindowSet":
+    "Đã đặt thời gian kết thúc — người đăng ký vượt khung giờ sẽ vào danh sách chờ.",
+  "cfg.capNoEnd":
+    "Chưa đặt thời gian kết thúc — không giới hạn sức chứa (không ai bị đưa vào danh sách chờ).",
+
+  // Board — station / idle / undo
+  "board.station": "Máy của tôi",
+  "board.stationAll": "Tất cả máy",
+  "board.stationActive": "Đang ở {machine}",
+  "board.idleTitle": "Máy đang lãng phí thời gian",
+  "board.idleWasted": "{machine}: đồng hồ đang chạy nhưng {name} chưa check-in ({time})",
+  "board.idleComplete":
+    "{machine} đã xong và đang rảnh trong khi máy khác vẫn còn người chờ.",
+  "board.idleHint":
+    "Hãy tìm và check-in người này, hoặc đánh dấu vắng mặt để chuyển lượt — không di chuyển ai sang máy khác.",
+  "board.undidCheckInMsg": "Đã check-in {name}.",
+  "board.undidCheckOutMsg": "Đã check-out {name}.",
+  "board.undo": "Hoàn tác",
+
+  // Dashboard (P2-2)
+  "dash.signups": "Lượt đăng ký",
+  "dash.completion": "Tỉ lệ hoàn thành",
+  "dash.noShow": "Tỉ lệ vắng/bỏ",
+  "dash.running": "Đang chạy",
+  "dash.waitlisted": "Danh sách chờ",
+  "dash.utilization": "Hiệu suất máy",
+  "dash.distanceTitle": "Quãng đường",
+  "dash.distTotal": "Tổng",
+  "dash.distAvg": "Trung bình",
+  "dash.distMax": "Cao nhất",
+  "dash.giftsTitle": "Quà đã trao",
+  "dash.giftUsed": "{used} / {total} đã trao",
+  "dash.activityTitle": "Hoạt động gần đây",
+  "dash.activityEmpty": "Chưa có hoạt động nào.",
+  "dash.action.check_in": "Check-in",
+  "dash.action.check_out": "Check-out",
+  "dash.action.skipped": "Bỏ qua",
+  "dash.action.no_show": "Vắng mặt",
+  "dash.action.undo_check_in": "Hoàn tác check-in",
+  "dash.action.undo_check_out": "Hoàn tác check-out",
 };
 
 const en: Dict = {
@@ -540,6 +620,75 @@ const en: Dict = {
   "gate.pin": "PIN",
   "gate.enter": "Enter",
   "gate.wrong": "Incorrect PIN.",
+  "gate.checking": "Checking…",
+
+  "error.UNDO_NOT_APPLICABLE": "That action can no longer be undone.",
+
+  "nav.leaderboard": "Leaderboard",
+  "mod.tab.dashboard": "Dashboard",
+  "notfound.title": "Page not found.",
+  "notfound.link": "Go to sign-up",
+
+  "confirm.waitlist.title": "You're on the waitlist",
+  "confirm.waitlist.body":
+    "Your projected slot runs past the event's end time, so it isn't guaranteed yet. If runners ahead no-show or skip, we'll confirm a spot for you automatically — keep an eye on the status page.",
+  "status.waitlist.tag": "Waitlist",
+  "status.waitlist.body":
+    "Your spot isn't guaranteed yet — your projected finish is past the event end time. We'll confirm if a slot frees up.",
+
+  "status.finished.title": "You finished!",
+  "status.finished.gift": "Your gift: {gift}",
+  "status.finished.leaderboard": "See the leaderboard →",
+
+  "lb.title": "EnergySteps — Leaderboard",
+  "lb.subtitle": "Ranked by distance run.",
+  "lb.individuals": "Individuals",
+  "lb.departments": "By domain",
+  "lb.finishers": "{n} finishers",
+  "lb.meters": "{n} m",
+  "lb.empty": "No finishers yet. Check back soon!",
+
+  "cfg.endTime": "Event end time",
+  "cfg.endHint": "Used for capacity — anyone projected to finish after this is waitlisted.",
+  "cfg.capacityTitle": "Capacity",
+  "cfg.capPromised": "Promised slots",
+  "cfg.capWaitlisted": "Waitlisted",
+  "cfg.capWindowSet": "End time set — sign-ups beyond the window are waitlisted.",
+  "cfg.capNoEnd": "No end time set — capacity is unbounded (no one is waitlisted).",
+
+  "board.station": "My station",
+  "board.stationAll": "All machines",
+  "board.stationActive": "At {machine}",
+  "board.idleTitle": "Wasted machine time",
+  "board.idleWasted": "{machine}: slot clock running but {name} hasn't checked in ({time})",
+  "board.idleComplete":
+    "{machine} is finished and idle while other machines still have runners waiting.",
+  "board.idleHint":
+    "Find and check this runner in, or mark no-show to advance — don't move anyone between machines.",
+  "board.undidCheckInMsg": "Checked in {name}.",
+  "board.undidCheckOutMsg": "Checked out {name}.",
+  "board.undo": "Undo",
+
+  "dash.signups": "Sign-ups",
+  "dash.completion": "Completion",
+  "dash.noShow": "No-show / skip",
+  "dash.running": "Running now",
+  "dash.waitlisted": "Waitlisted",
+  "dash.utilization": "Machine use",
+  "dash.distanceTitle": "Distance",
+  "dash.distTotal": "Total",
+  "dash.distAvg": "Average",
+  "dash.distMax": "Best",
+  "dash.giftsTitle": "Gifts awarded",
+  "dash.giftUsed": "{used} / {total} given",
+  "dash.activityTitle": "Recent activity",
+  "dash.activityEmpty": "No activity yet.",
+  "dash.action.check_in": "Checked in",
+  "dash.action.check_out": "Checked out",
+  "dash.action.skipped": "Skipped",
+  "dash.action.no_show": "No-show",
+  "dash.action.undo_check_in": "Undid check-in",
+  "dash.action.undo_check_out": "Undid check-out",
 };
 
 const DICTS: Record<Lang, Dict> = { vi, en };

@@ -27,6 +27,7 @@ export default function ConfigView() {
 
   // Form fields (local copies of config).
   const [startLocal, setStartLocal] = useState("");
+  const [endLocal, setEndLocal] = useState("");
   const [bufferSeconds, setBufferSeconds] = useState(0);
   const [durations, setDurations] = useState<number[]>([]);
   const [queueCount, setQueueCount] = useState(1);
@@ -52,6 +53,7 @@ export default function ConfigView() {
   useEffect(() => {
     if (!config) return;
     setStartLocal(toDatetimeLocal(config.event_start_time));
+    setEndLocal(toDatetimeLocal(config.event_end_time));
     setBufferSeconds(config.buffer_seconds);
     setDurations([...config.allowed_run_durations].sort((a, b) => a - b));
     setQueueCount(config.queue_count);
@@ -88,6 +90,7 @@ export default function ConfigView() {
     try {
       await moderatorUpdateConfig(pin, {
         event_start_time: fromDatetimeLocal(startLocal),
+        event_end_time: fromDatetimeLocal(endLocal),
         buffer_seconds: bufferSeconds,
         allowed_run_durations: durations,
         queue_count: queueCount,
@@ -166,6 +169,33 @@ export default function ConfigView() {
         )}
       </section>
 
+      {/* Capacity readout (P0-2) */}
+      {(() => {
+        const ps = state.participants;
+        const waitlisted = ps.filter((p) => p.waitlisted).length;
+        const promised = ps.length - waitlisted;
+        return (
+          <section className={card}>
+            <h2 className="text-lg font-semibold text-brand">{t("cfg.capacityTitle")}</h2>
+            <div className="mt-3 flex flex-wrap gap-6">
+              <div>
+                <div className="text-2xl font-bold tabular-nums text-emerald-700">{promised}</div>
+                <div className="text-xs text-slate-500">{t("cfg.capPromised")}</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold tabular-nums text-amber-700">{waitlisted}</div>
+                <div className="text-xs text-slate-500">{t("cfg.capWaitlisted")}</div>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-slate-600">
+              {state.config.event_end_time
+                ? t("cfg.capWindowSet")
+                : t("cfg.capNoEnd")}
+            </p>
+          </section>
+        );
+      })()}
+
       {/* Configuration form */}
       <section className={card}>
         <h2 className="text-lg font-semibold text-brand">{t("cfg.title")}</h2>
@@ -200,6 +230,21 @@ export default function ConfigView() {
                 })}
               </p>
             )}
+          </div>
+
+          <div>
+            <label className={label} htmlFor="event_end_time">
+              {t("cfg.endTime")}{" "}
+              <span className="font-normal text-slate-400">{t("cfg.vnTime")}</span>
+            </label>
+            <input
+              id="event_end_time"
+              type="datetime-local"
+              className={input}
+              value={endLocal}
+              onChange={(e) => setEndLocal(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-500">{t("cfg.endHint")}</p>
           </div>
 
           <div>

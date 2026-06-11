@@ -10,6 +10,7 @@ export type ParticipantStatus =
 export interface EventConfig {
   id: number;
   event_start_time: string | null; // ISO timestamptz
+  event_end_time: string | null; // ISO timestamptz; capacity bound (P0-2)
   buffer_seconds: number;
   queue_count: number;
   allowed_run_durations: number[]; // seconds
@@ -44,6 +45,7 @@ export interface Participant {
   actual_finish: string | null;
   distance_logged: number | null;
   gift_id: string | null;
+  waitlisted: boolean; // P0-2: projected finish past event end; not promised
   created_at: string;
 }
 
@@ -58,6 +60,14 @@ export interface QueueMember {
   actual_finish: string | null;
 }
 
+// The matched runner's own status — QueueMember plus their own (non-identity)
+// result fields (P2-1) and the waitlist flag (P0-2).
+export interface MyStatus extends QueueMember {
+  distance_logged: number | null;
+  gift_name: string | null;
+  waitlisted: boolean;
+}
+
 // ---- RPC return shapes ----
 
 export interface SignUpResult {
@@ -66,15 +76,43 @@ export interface SignUpResult {
   estimated_start: string | null;
   event_start_time: string | null;
   buffer_seconds: number;
+  waitlisted: boolean; // P0-2
 }
 
 export interface StatusResult {
   found: boolean;
   // De-identified: the matched runner's OWN status fields only (no name/email).
-  me?: QueueMember;
+  me?: MyStatus;
   queue?: Queue;
   config?: EventConfig;
   queue_members?: QueueMember[];
+}
+
+// P1-5 — public leaderboard (de-identified to a friendly handle).
+export interface LeaderboardEntry {
+  display_name: string;
+  department: string;
+  distance: number;
+}
+export interface DepartmentTotal {
+  department: string;
+  total_distance: number;
+  finishers: number;
+}
+export interface LeaderboardResult {
+  individuals: LeaderboardEntry[];
+  departments: DepartmentTotal[];
+}
+
+// P1-4 — moderator audit-log entry.
+export interface ActionLogEntry {
+  id: string;
+  pin_label: string | null;
+  action: string;
+  participant_id: string | null;
+  participant_name: string | null;
+  payload: Record<string, unknown> | null;
+  created_at: string;
 }
 
 export interface ModeratorState {
@@ -95,4 +133,5 @@ export type ApiErrorCode =
   | "QUEUE_COUNT_HAS_SIGNUPS"
   | "ALREADY_STARTED"
   | "NO_START_TIME"
+  | "UNDO_NOT_APPLICABLE"
   | "UNKNOWN";

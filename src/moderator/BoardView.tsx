@@ -10,6 +10,8 @@ import {
   moderatorCheckIn,
   moderatorCheckOut,
   moderatorSkip,
+  moderatorUndoCheckIn,
+  moderatorUndoCheckOut,
 } from "../lib/api";
 import {
   formatClockIso,
@@ -17,9 +19,21 @@ import {
   formatDuration,
 } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { playChime, unlockAudio } from "../lib/sound";
 import type { Participant, Queue } from "../lib/types";
 
 const DONE = new Set(["finished", "skipped", "no_show"]);
+
+// How long the "Undo" affordance stays available after a check-in / check-out.
+const UNDO_WINDOW_MS = 60_000;
+const STATION_KEY = "energysteps.station";
+
+type LastAction = {
+  id: string;
+  kind: "check_in" | "check_out";
+  name: string;
+  at: number;
+};
 
 function statusPillClass(status: string): string {
   switch (status) {
@@ -46,6 +60,15 @@ export default function BoardView() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [distanceInput, setDistanceInput] = useState("");
   const [giftInput, setGiftInput] = useState("");
+  const [callOpen, setCallOpen] = useState(false);
+  const [lastAction, setLastAction] = useState<LastAction | null>(null);
+  const [station, setStation] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(STATION_KEY);
+    } catch {
+      return null;
+    }
+  });
 
   // Ticking clock for the countdowns.
   useEffect(() => {
@@ -53,15 +76,28 @@ export default function BoardView() {
     return () => clearInterval(id);
   }, []);
 
-  // Default the selected queue to the first one once state arrives, and keep a
-  // valid selection if queues change.
+  // Default the selected queue once state arrives — preferring the moderator's
+  // chosen station (P1-4) — and keep a valid selection if queues change.
   useEffect(() => {
     if (!state) return;
     const exists = state.queues.some((q) => q.id === selectedQueueId);
     if (!exists) {
-      setSelectedQueueId(state.queues[0]?.id ?? null);
+      const stationValid = station && state.queues.some((q) => q.id === station);
+      setSelectedQueueId(stationValid ? station : (state.queues[0]?.id ?? null));
     }
-  }, [state, selectedQueueId]);
+  }, [state, selectedQueueId, station]);
+
+  // Per-station preference: persist + jump to that machine.
+  function chooseStation(qid: string | null) {
+    setStation(qid);
+    try {
+      if (qid) localStorage.setItem(STATION_KEY, qid);
+      else localStorage.removeItem(STATION_KEY);
+    } catch {
+      // ignore (privacy mode)
+    }
+    if (qid) setSelectedQueueId(qid);
+  }
 
   // Per-queue participant lists (sorted by position), for tabs + selected view.
   const byQueue = useMemo(() => {
@@ -107,15 +143,17 @@ export default function BoardView() {
   const upcoming = activeList.slice(1);
   const doneList = queueParticipants.filter((p) => DONE.has(p.status));
 
-  async function run(fn: () => Promise<void>) {
+  async function run(fn: () => Promise<void>): Promise<boolean> {
     setBusy(true);
     setMsg(null);
     try {
       await fn();
       await reload();
+      return true;
     } catch (e) {
       if (e instanceof ApiError) setMsg(t(`error.${e.code}`));
       else setMsg(t("common.wrong"));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -123,7 +161,10 @@ export default function BoardView() {
 
   function onCheckIn() {
     if (!head) return;
-    void run(() => moderatorCheckIn(pin, head.id));
+    const h = head;
+    void run(() => moderatorCheckIn(pin, h.id)).then((ok) => {
+      if (ok) setLastAction({ id: h.id, kind: "check_in", name: h.name, at: Date.now() });
+    });
   }
 
   function openCheckout() {
@@ -134,6 +175,7 @@ export default function BoardView() {
 
   function confirmCheckout() {
     if (!head) return;
+    const h = head;
     const trimmed = distanceInput.trim();
     const distance = trimmed === "" ? null : Number(trimmed);
     if (distance !== null && Number.isNaN(distance)) {
@@ -142,7 +184,20 @@ export default function BoardView() {
     }
     const giftId = giftInput === "" ? null : giftInput;
     setCheckoutOpen(false);
-    void run(() => moderatorCheckOut(pin, head.id, distance, giftId));
+    void run(() => moderatorCheckOut(pin, h.id, distance, giftId)).then((ok) => {
+      if (ok) setLastAction({ id: h.id, kind: "check_out", name: h.name, at: Date.now() });
+    });
+  }
+
+  function undoLast() {
+    if (!lastAction) return;
+    const { id, kind } = lastAction;
+    setLastAction(null);
+    void run(() =>
+      kind === "check_in"
+        ? moderatorUndoCheckIn(pin, id)
+        : moderatorUndoCheckOut(pin, id),
+    );
   }
 
   function onSkip(status: "no_show" | "skipped") {
@@ -154,6 +209,7 @@ export default function BoardView() {
     ) {
       return;
     }
+    setLastAction(null); // skip/no-show isn't undoable from the bar
     void run(() => moderatorSkip(pin, head.id, status));
   }
 
@@ -172,8 +228,121 @@ export default function BoardView() {
 
   const availableGifts = gifts.filter((g) => g.remaining_quantity > 0);
 
+  // Layer-1 "Call next" cue: the runners who should physically head to this
+  // machine now. While awaiting a check-in that's the head + on-deck; while a
+  // runner is on the machine it's the next two waiting. Purely a moderator-side
+  // attention aid (sound + big names to read over the PA) — no data is changed.
+  const callList = (showRun ? upcoming : activeList).slice(0, 2);
+
+  function openCall() {
+    unlockAudio();
+    playChime(3);
+    setCallOpen(true);
+  }
+
+  // P1-1 — idle-machine visibility. For every machine, figure out whether its
+  // slot clock is burning with nobody checked in ("wasted"), and how big its
+  // backlog is. We surface this so a moderator can hustle the missing runner —
+  // we never move anyone between machines (the no-rebalancing invariant holds).
+  const queueStats = queues.map((q) => {
+    const list = byQueue.get(q.id) ?? [];
+    const tmr = computeSlotTimer(list, config.event_start_time, config.buffer_seconds);
+    const active = list.filter((p) => !DONE.has(p.status));
+    const wasted =
+      tmr.phase === "awaiting_checkin" &&
+      tmr.checkInDeadlineMs !== null &&
+      now > tmr.checkInDeadlineMs;
+    return {
+      q,
+      waiting: active.length,
+      complete: tmr.phase === "queue_complete",
+      wasted,
+      wastedSec: wasted && tmr.checkInDeadlineMs ? (now - tmr.checkInDeadlineMs) / 1000 : 0,
+      headName: (tmr.head as Participant | null)?.name ?? null,
+    };
+  });
+  const anyWaitingElsewhere = queueStats.some((s) => !s.complete && s.waiting > 0);
+  const wastedQueues = queueStats.filter((s) => s.wasted);
+  const idleComplete = queueStats.filter((s) => s.complete);
+  const showIdleAlert =
+    wastedQueues.length > 0 || (idleComplete.length > 0 && anyWaitingElsewhere);
+
+  const undoVisible = lastAction !== null && now - lastAction.at < UNDO_WINDOW_MS;
+
   return (
     <div className="space-y-6">
+      {/* Per-station selector (P1-4) */}
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-medium text-slate-600">{t("board.station")}</span>
+        <select
+          value={station ?? ""}
+          onChange={(e) => chooseStation(e.target.value === "" ? null : e.target.value)}
+          className="rounded-lg border border-slate-300 px-3 py-1.5 focus:border-brand focus:outline-none"
+        >
+          <option value="">{t("board.stationAll")}</option>
+          {queues.map((q) => (
+            <option key={q.id} value={q.id}>
+              {q.name}
+            </option>
+          ))}
+        </select>
+        {station && (
+          <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand">
+            {t("board.stationActive", {
+              machine: queues.find((q) => q.id === station)?.name ?? "",
+            })}
+          </span>
+        )}
+      </div>
+
+      {/* Idle-machine alert (P1-1) — visibility only, never a move */}
+      {showIdleAlert && (
+        <div
+          role="status"
+          className="rounded-2xl bg-amber-50 p-4 shadow-sm ring-1 ring-amber-300"
+        >
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+            <span aria-hidden>⚠</span> {t("board.idleTitle")}
+          </div>
+          <ul className="mt-2 space-y-1 text-sm text-amber-900">
+            {wastedQueues.map((s) => (
+              <li key={s.q.id}>
+                {t("board.idleWasted", {
+                  machine: s.q.name,
+                  name: s.headName ?? "—",
+                  time: formatCountdown(s.wastedSec),
+                })}
+              </li>
+            ))}
+            {anyWaitingElsewhere &&
+              idleComplete.map((s) => (
+                <li key={s.q.id}>{t("board.idleComplete", { machine: s.q.name })}</li>
+              ))}
+          </ul>
+          <p className="mt-2 text-xs text-amber-700">{t("board.idleHint")}</p>
+        </div>
+      )}
+
+      {/* Undo bar (P1-3) */}
+      {undoVisible && lastAction && (
+        <div className="flex items-center justify-between rounded-xl bg-slate-900 px-4 py-2.5 text-sm text-white">
+          <span>
+            {t(
+              lastAction.kind === "check_in" ? "board.undidCheckInMsg" : "board.undidCheckOutMsg",
+              { name: lastAction.name },
+            )}
+          </span>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={undoLast}
+            className="rounded-lg bg-white px-3 py-1 font-semibold text-slate-900 hover:bg-slate-100 disabled:opacity-50"
+          >
+            {t("board.undo")}
+          </button>
+        </div>
+      )}
+
       {/* Queue tabs */}
       <div className="flex flex-wrap gap-2">
         {queues.map((q) => {
@@ -220,6 +389,18 @@ export default function BoardView() {
 
       {/* Head / current slot */}
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        {callList.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <button
+              type="button"
+              onClick={openCall}
+              className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-600"
+            >
+              {t("board.callNext")}
+            </button>
+          </div>
+        )}
+
         {timer.phase === "no_start_time" && (
           <p className="text-slate-600">{t("board.noStartTime")}</p>
         )}
@@ -465,6 +646,60 @@ export default function BoardView() {
             ))}
           </ul>
         </details>
+      )}
+
+      {/* Call-next overlay: big names + chime, for reading over the PA. */}
+      {callOpen && callList.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-8 text-center shadow-2xl">
+            <div className="text-sm font-semibold uppercase tracking-wide text-amber-600">
+              {t("board.callTitle")}
+            </div>
+            <div className="mt-1 text-lg font-medium text-slate-500">
+              {selectedQueue.name}
+            </div>
+            <ul className="mt-6 space-y-5">
+              {callList.map((p, i) => (
+                <li key={p.id}>
+                  <div className="text-4xl font-extrabold tracking-tight text-slate-900">
+                    {p.name}
+                  </div>
+                  <div className="mt-1 text-sm text-slate-500">
+                    {p.department} · {formatDuration(p.run_duration_seconds)} ·{" "}
+                    <span
+                      className={
+                        i === 0
+                          ? "font-semibold text-amber-600"
+                          : "text-slate-500"
+                      }
+                    >
+                      {i === 0 ? t("board.callNow") : t("board.callOnDeck")}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-base text-slate-600">
+              {t("board.callInstruction", { machine: selectedQueue.name })}
+            </p>
+            <div className="mt-8 flex justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => playChime(3)}
+                className="rounded-xl bg-amber-500 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-amber-600"
+              >
+                {t("board.callRingAgain")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCallOpen(false)}
+                className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
+              >
+                {t("board.callDone")}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

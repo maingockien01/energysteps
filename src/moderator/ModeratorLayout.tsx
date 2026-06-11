@@ -8,6 +8,7 @@ import { clearSessionPin } from "./session";
 // existing bookmarks keep working even though the tab now reads "Registration".
 const tabs = [
   { to: "/moderator", labelKey: "mod.tab.board", end: true },
+  { to: "/moderator/dashboard", labelKey: "mod.tab.dashboard" },
   { to: "/moderator/runners", labelKey: "mod.tab.registration" },
   { to: "/moderator/gifts", labelKey: "mod.tab.gifts" },
   { to: "/moderator/config", labelKey: "mod.tab.config" },

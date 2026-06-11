@@ -15,6 +15,10 @@ A complete, non-expert walkthrough from zero to a live URL. Follow top to bottom
    it, copy its **entire** contents, paste into the SQL editor, and click **Run**:
    1. `0001_init.sql` — tables, security policies, and the functions the app calls.
    2. `0002_reset_event.sql` — the "Restart event data" function.
+   3. `0003_signup_concurrency.sql` — concurrency-safe sign-up.
+   4. `0004_event_defaults.sql` — mblife event defaults (durations, machines, gifts).
+   5. `0005_improvements.sql` — capacity/waitlist, verify_pin, undo, audit log,
+      leaderboard, richer status payload.
    - Each should finish with "Success. No rows returned."
 4. Set your real moderator PIN(s). Still in the SQL editor, run (replace with
    your own PINs; one row per PIN):
@@ -22,7 +26,10 @@ A complete, non-expert walkthrough from zero to a live URL. Follow top to bottom
    delete from public.moderator_pins;            -- remove the default 1234
    insert into public.moderator_pins (pin) values ('4821'), ('7140');
    ```
-   Remember these — they must match `VITE_MODERATOR_PINS` later (Step 3c / Step 5).
+   These PINs live ONLY here in the database now — the gate validates them via
+   the `verify_pin` RPC. There is no frontend PIN env var to keep in sync.
+   Optionally label a PIN per station: `update public.moderator_pins set label =
+   'Station 1' where pin = '4821';` (the label shows in the dashboard audit log).
 5. Get your API credentials. Left sidebar **Project Settings → API**:
    - **Project URL** — copy the value under "Project URL". It looks like
      `https://abcdefghijklmnop.supabase.co`.
@@ -67,7 +74,9 @@ git push -u origin main
    | --- | --- |
    | `VITE_SUPABASE_URL` | your Project URL from Step 1.5 (the base URL) |
    | `VITE_SUPABASE_ANON_KEY` | your anon/public key from Step 1.5 |
-   | `VITE_MODERATOR_PINS` | the same PINs from Step 1.4, comma-separated, e.g. `4821,7140` |
+
+   (There is no longer a `VITE_MODERATOR_PINS` variable — PINs live only in the
+   `moderator_pins` table from Step 1.4.)
 4. Click **Deploy site**.
 
 ---
@@ -97,14 +106,12 @@ git push -u origin main
 ## Step 5 — Moderators: logging in & how PINs work
 
 - Moderators go to **`/moderator`** on the live site and enter a PIN.
-- A PIN is accepted if it appears in **both**:
-  1. `VITE_MODERATOR_PINS` (the frontend env var — gates the UI), and
-  2. the `moderator_pins` table in the database (the real security check inside
-     every privileged operation).
-- **Keep these two in sync.** To add/remove a moderator PIN:
-  1. Update the `moderator_pins` table in the Supabase SQL editor
-     (`insert into public.moderator_pins (pin) values ('newpin');` or `delete`).
-  2. Update `VITE_MODERATOR_PINS` in Netlify and redeploy.
+- A PIN is accepted if it appears in the **`moderator_pins` table** in the
+  database — the single source of truth. The gate checks it via the `verify_pin`
+  RPC, and every privileged operation re-checks it server-side.
+- To add/remove a moderator PIN, just update the table in the Supabase SQL editor
+  (`insert into public.moderator_pins (pin) values ('newpin');` or `delete`).
+  No redeploy needed — the change takes effect immediately.
 - Any single valid PIN grants full moderator access (there are no roles). The
   validated PIN is kept in the browser's `sessionStorage` and is cleared when the
   tab closes or the moderator clicks **Lock**.

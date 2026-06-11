@@ -7,6 +7,7 @@ import { useModerator } from "./context";
 import { ApiError, moderatorUpdateParticipant } from "../lib/api";
 import { formatDateTimeNumericIso, formatDuration } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { matchesVN } from "../lib/text";
 import type { Participant } from "../lib/types";
 
 function statusPillClass(status: string): string {
@@ -47,16 +48,14 @@ export default function RunnersView() {
 
   const filtered = useMemo(() => {
     if (!state) return [];
-    const q = query.trim().toLowerCase();
+    const q = query.trim();
     // Most-recent registrations first.
     const list = [...state.participants].sort(
       (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
     );
     if (q === "") return list;
-    return list.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q),
-    );
+    // Accent-insensitive so "nguyen" matches "Nguyễn" (Vietnamese input).
+    return list.filter((p) => matchesVN(p.name, q) || matchesVN(p.email, q));
   }, [state, query]);
 
   if (!state) {

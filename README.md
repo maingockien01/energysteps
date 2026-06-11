@@ -25,7 +25,9 @@ cp .env.example .env
 #   then edit .env and set:
 #     VITE_SUPABASE_URL=...        (base project URL, NOT the /rest/v1 endpoint)
 #     VITE_SUPABASE_ANON_KEY=...   (anon/public key, NOT service_role)
-#     VITE_MODERATOR_PINS=1234     (comma-separated; keep in sync with the DB)
+#   (Moderator PINs live ONLY in the DB moderator_pins table now — there is no
+#    frontend PIN env var to keep in sync. The gate validates via the verify_pin
+#    RPC. See migration 0005.)
 
 # 3. Start the dev server
 npm run dev
@@ -35,11 +37,12 @@ npm run dev
 Routes:
 - `/` — public sign-up
 - `/status` — public status lookup (by email)
-- `/moderator` — moderator console (enter a PIN from `VITE_MODERATOR_PINS`)
+- `/leaderboard` — public leaderboard (distance, by person and by domain)
+- `/moderator` — moderator console (enter a PIN from the `moderator_pins` table)
 
-> The moderator console needs the same PIN to exist in the database
-> `moderator_pins` table (the migration seeds `1234`). Keep `VITE_MODERATOR_PINS`
-> and that table in sync — see `RELEASE.md` step 5.
+> Moderator PINs live in the database `moderator_pins` table (the migration
+> seeds `1234`); the gate validates against it via the `verify_pin` RPC. The DB
+> is the single source of truth — there is no frontend PIN list to keep in sync.
 
 ## Build
 

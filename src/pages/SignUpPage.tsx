@@ -4,6 +4,12 @@ import { ApiError, getPublicConfig, signUp } from "../lib/api";
 import { formatClockIso, formatDuration } from "../lib/format";
 import { useT, LangToggle } from "../lib/i18n";
 import { DOMAINS } from "../lib/domains";
+import {
+  type AlertPermission,
+  notificationPermission,
+  requestNotificationPermission,
+} from "../lib/notify";
+import { unlockAudio } from "../lib/sound";
 import type { SignUpResult } from "../lib/types";
 
 interface PublicConfig {
@@ -202,9 +208,15 @@ export default function SignUpPage() {
               {submitting ? t("signup.submitting") : t("signup.submit")}
             </button>
 
-            <p className="mt-4 text-center text-sm text-slate-500">
+            <p className="mt-4 flex justify-center gap-4 text-center text-sm text-slate-500">
               <Link to="/status" className="font-medium text-brand underline hover:text-brand-dark">
                 {t("signup.checkStatus")}
+              </Link>
+              <Link
+                to="/leaderboard"
+                className="font-medium text-brand underline hover:text-brand-dark"
+              >
+                {t("nav.leaderboard")}
               </Link>
             </p>
           </form>
@@ -274,6 +286,15 @@ function ConfirmationCard({
   onAgain: () => void;
 }) {
   const t = useT();
+  const [alertPerm, setAlertPerm] = useState<AlertPermission>(() =>
+    notificationPermission(),
+  );
+
+  async function enableAlerts() {
+    unlockAudio(); // gesture: permit later chimes on the status page
+    setAlertPerm(await requestNotificationPermission());
+  }
+
   const start = result.estimated_start;
   let windowText: string | null = null;
   if (start) {
@@ -286,6 +307,16 @@ function ConfirmationCard({
       <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
         {t("confirm.done")}
       </div>
+
+      {result.waitlisted && (
+        <div className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-300">
+          <p className="font-semibold">
+            <span aria-hidden>⏳ </span>
+            {t("confirm.waitlist.title")}
+          </p>
+          <p className="mt-1">{t("confirm.waitlist.body")}</p>
+        </div>
+      )}
 
       <p className="text-sm text-slate-600">{t("confirm.machineLabel")}</p>
       <p className="mt-1 text-2xl font-bold tracking-tight text-brand">
@@ -321,10 +352,25 @@ function ConfirmationCard({
           )}
       </p>
 
+      {alertPerm !== "unsupported" &&
+        (alertPerm === "granted" ? (
+          <p className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 ring-1 ring-emerald-200">
+            {t("confirm.alertsOn")}
+          </p>
+        ) : alertPerm === "default" ? (
+          <button
+            type="button"
+            onClick={() => void enableAlerts()}
+            className="mt-5 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+          >
+            {t("confirm.alertsCta")}
+          </button>
+        ) : null)}
+
       <button
         type="button"
         onClick={onAgain}
-        className="mt-6 w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
+        className="mt-3 w-full rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
       >
         {t("confirm.again")}
       </button>

@@ -4,7 +4,9 @@
 import { supabase } from "./supabase";
 import { broadcastChanged } from "./realtime";
 import type {
+  ActionLogEntry,
   ApiErrorCode,
+  LeaderboardResult,
   ModeratorState,
   SignUpResult,
   StatusResult,
@@ -20,6 +22,7 @@ const KNOWN_CODES: ApiErrorCode[] = [
   "QUEUE_COUNT_HAS_SIGNUPS",
   "ALREADY_STARTED",
   "NO_START_TIME",
+  "UNDO_NOT_APPLICABLE",
 ];
 
 export class ApiError extends Error {
@@ -95,24 +98,42 @@ export async function getStatusByEmail(email: string): Promise<StatusResult> {
 export async function getPublicConfig(): Promise<{
   allowed_run_durations: number[];
   event_start_time: string | null;
+  event_end_time: string | null;
   buffer_seconds: number;
   event_started: boolean;
 }> {
   const { data, error } = await supabase
     .from("event_config")
-    .select("allowed_run_durations,event_start_time,buffer_seconds,event_started")
+    .select(
+      "allowed_run_durations,event_start_time,event_end_time,buffer_seconds,event_started",
+    )
     .eq("id", 1)
     .single();
   if (error) throw toApiError(error);
   return data as {
     allowed_run_durations: number[];
     event_start_time: string | null;
+    event_end_time: string | null;
     buffer_seconds: number;
     event_started: boolean;
   };
 }
 
+// Public leaderboard (P1-5). De-identified to a friendly handle server-side.
+export async function getLeaderboard(): Promise<LeaderboardResult> {
+  const { data, error } = await supabase.rpc("get_leaderboard");
+  if (error) throw toApiError(error);
+  return data as LeaderboardResult;
+}
+
 // ---- Moderator (all take the validated PIN) ----
+
+// P1-2: the gate validates the PIN against the DB (single source of truth).
+export async function moderatorVerifyPin(pin: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("verify_pin", { p_pin: pin });
+  if (error) throw toApiError(error);
+  return data === true;
+}
 
 export async function moderatorGetState(pin: string): Promise<ModeratorState> {
   const { data, error } = await supabase.rpc("moderator_get_state", { p_pin: pin });
@@ -157,6 +178,38 @@ export async function moderatorSkip(
   });
   if (error) throw toApiError(error);
   await broadcastChanged();
+}
+
+// P1-3 — undo the last check-in / check-out for a runner.
+export async function moderatorUndoCheckIn(pin: string, participantId: string) {
+  const { error } = await supabase.rpc("moderator_undo_check_in", {
+    p_pin: pin,
+    p_participant_id: participantId,
+  });
+  if (error) throw toApiError(error);
+  await broadcastChanged();
+}
+
+export async function moderatorUndoCheckOut(pin: string, participantId: string) {
+  const { error } = await supabase.rpc("moderator_undo_check_out", {
+    p_pin: pin,
+    p_participant_id: participantId,
+  });
+  if (error) throw toApiError(error);
+  await broadcastChanged();
+}
+
+// P1-4 — recent moderator activity (audit view).
+export async function moderatorGetActionLog(
+  pin: string,
+  limit = 50,
+): Promise<ActionLogEntry[]> {
+  const { data, error } = await supabase.rpc("moderator_get_action_log", {
+    p_pin: pin,
+    p_limit: limit,
+  });
+  if (error) throw toApiError(error);
+  return data as ActionLogEntry[];
 }
 
 export async function moderatorUpdateParticipant(
@@ -212,6 +265,7 @@ export async function moderatorUpdateConfig(
   pin: string,
   cfg: {
     event_start_time: string | null;
+    event_end_time: string | null;
     buffer_seconds: number;
     allowed_run_durations: number[];
     queue_count: number;
@@ -220,6 +274,7 @@ export async function moderatorUpdateConfig(
   const { error } = await supabase.rpc("moderator_update_config", {
     p_pin: pin,
     p_event_start_time: cfg.event_start_time,
+    p_event_end_time: cfg.event_end_time,
     p_buffer_seconds: cfg.buffer_seconds,
     p_allowed_run_durations: cfg.allowed_run_durations,
     p_queue_count: cfg.queue_count,
