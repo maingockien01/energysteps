@@ -47,7 +47,7 @@ const vi: Dict = {
   "error.UNKNOWN": "Đã có lỗi xảy ra. Vui lòng thử lại.",
 
   // Sign-up page
-  "signup.title": "EnergySteps — Đăng ký tham gia",
+  "signup.title": "ENERGY STEPS",
   "signup.subtitle": "Giữ chỗ của bạn, chọn thời lượng chạy, và chúng tôi sẽ xếp máy cho bạn.",
   "signup.name.label": "Họ và tên",
   "signup.name.placeholder": "Tên của bạn",
@@ -74,6 +74,18 @@ const vi: Dict = {
   "confirm.statusHint": "Bạn có thể quay lại bất cứ lúc nào để tra cứu trạng thái bằng email tại {link}.",
   "confirm.statusPage": "trang trạng thái",
   "confirm.again": "Đăng ký cho người khác",
+  "confirm.alertsCta": "🔔 Nhắc tôi khi sắp đến lượt",
+  "confirm.alertsOn": "🔔 Đã bật thông báo — giữ trang trạng thái mở để nhận nhắc.",
+
+  // Notifications (in-tab "get ready" cue)
+  "notify.enable": "🔔 Báo cho tôi khi sắp đến lượt",
+  "notify.on": "🔔 Đã bật thông báo",
+  "notify.denied": "Thông báo đang tắt. Bật trong cài đặt trình duyệt nếu muốn nhận nhắc.",
+  "notify.keepOpen": "Giữ trang này mở để nhận nhắc khi sắp tới lượt.",
+  "notify.getReady.title": "Sắp đến lượt bạn!",
+  "notify.getReady.body": "Còn {n} người nữa — hãy đến {machine}.",
+  "notify.upNext.title": "Đến lượt bạn!",
+  "notify.upNext.body": "Bạn là người tiếp theo — hãy đến {machine} ngay.",
 
   // Status page
   "status.title": "EnergySteps — Trạng thái của tôi",
@@ -155,6 +167,13 @@ const vi: Dict = {
   "board.doneCollapsed": "Hoàn thành & bỏ qua ({n})",
   "board.logged": "{n} đã ghi",
   "board.out": "ra {time}",
+  "board.callNext": "📢 Gọi lượt tiếp",
+  "board.callTitle": "Mời lên máy",
+  "board.callNow": "Lên ngay",
+  "board.callOnDeck": "Chuẩn bị",
+  "board.callInstruction": "Vui lòng đến {machine} ngay.",
+  "board.callRingAgain": "🔔 Rung lại",
+  "board.callDone": "Xong",
 
   // Moderator — registration (runners)
   "reg.loading": "Đang tải danh sách đăng ký…",
@@ -294,7 +313,7 @@ const en: Dict = {
   "error.NO_START_TIME": "Set an event start time before starting the event.",
   "error.UNKNOWN": "Something went wrong. Please try again.",
 
-  "signup.title": "EnergySteps — Sign up to run",
+  "signup.title": "ENERGY STEPS",
   "signup.subtitle": "Reserve your spot, pick a run length, and we’ll assign you a machine.",
   "signup.name.label": "Name",
   "signup.name.placeholder": "Your name",
@@ -320,6 +339,17 @@ const en: Dict = {
   "confirm.statusHint": "You can return anytime to look up your status by email on the {link}.",
   "confirm.statusPage": "status page",
   "confirm.again": "Sign up someone else",
+  "confirm.alertsCta": "🔔 Alert me when I'm close",
+  "confirm.alertsOn": "🔔 Alerts on — keep the status page open to get your heads-up.",
+
+  "notify.enable": "🔔 Alert me when I'm close",
+  "notify.on": "🔔 Alerts on",
+  "notify.denied": "Alerts are off. Enable notifications in your browser settings to get a heads-up.",
+  "notify.keepOpen": "Keep this page open to get a heads-up when you're close.",
+  "notify.getReady.title": "You're almost up!",
+  "notify.getReady.body": "{n} runners ahead — head to {machine}.",
+  "notify.upNext.title": "You're up next!",
+  "notify.upNext.body": "You're next — head to {machine} now.",
 
   "status.title": "EnergySteps — My status",
   "status.subtitle": "Look up your spot in line and your projected check-in time.",
@@ -397,6 +427,13 @@ const en: Dict = {
   "board.doneCollapsed": "Finished & skipped ({n})",
   "board.logged": "{n} logged",
   "board.out": "out {time}",
+  "board.callNext": "📢 Call next",
+  "board.callTitle": "Please come up",
+  "board.callNow": "Now",
+  "board.callOnDeck": "On deck",
+  "board.callInstruction": "Please come to {machine} now.",
+  "board.callRingAgain": "🔔 Ring again",
+  "board.callDone": "Done",
 
   "reg.loading": "Loading registrations…",
   "reg.search.label": "Search Amazers",
