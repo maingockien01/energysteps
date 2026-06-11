@@ -20,6 +20,8 @@ const KNOWN_CODES: ApiErrorCode[] = [
   "INVALID_PIN",
   "INVALID_STATUS",
   "GIFT_ALREADY_AWARDED",
+  "GIFT_OUT_OF_STOCK",
+  "INVALID_DISTANCE",
   "QUEUE_COUNT_LOCKED",
   "QUEUE_COUNT_HAS_SIGNUPS",
   "ALREADY_STARTED",
@@ -51,6 +53,10 @@ export function errorMessage(code: ApiErrorCode): string {
       return "That email already has an in-progress registration. You can register again after you finish or are skipped.";
     case "GIFT_ALREADY_AWARDED":
       return "This person has already received a gift. Check out with “No gift”.";
+    case "GIFT_OUT_OF_STOCK":
+      return "That gift is out of stock. Pick another gift, or check out with “No gift”.";
+    case "INVALID_DISTANCE":
+      return "Distance must be a non-negative number.";
     case "INVALID_DURATION":
       return "That run duration is not allowed. Please pick one from the list.";
     case "INVALID_PIN":

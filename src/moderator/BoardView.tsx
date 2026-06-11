@@ -182,7 +182,7 @@ export default function BoardView() {
       return;
     }
     const distance = Number(trimmed);
-    if (Number.isNaN(distance)) {
+    if (!Number.isFinite(distance) || distance < 0) {
       setMsg(t("board.distanceNaN"));
       return;
     }
