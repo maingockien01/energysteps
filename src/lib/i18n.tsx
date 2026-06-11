@@ -131,6 +131,7 @@ const vi: Dict = {
   // Moderator — layout / nav
   "mod.title": "EnergySteps · Quản trị",
   "mod.tab.board": "Bảng điều khiển",
+  "mod.tab.more": "Thêm",
   "mod.tab.guide": "Hướng dẫn",
   "mod.tab.registration": "Đăng ký",
   "mod.tab.gifts": "Quà tặng",
@@ -488,6 +489,7 @@ const en: Dict = {
 
   "mod.title": "EnergySteps · Moderator",
   "mod.tab.board": "Board",
+  "mod.tab.more": "More",
   "mod.tab.guide": "Guide",
   "mod.tab.registration": "Registration",
   "mod.tab.gifts": "Gifts",
