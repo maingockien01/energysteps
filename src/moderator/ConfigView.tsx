@@ -1,7 +1,13 @@
 // Event configuration: edit config fields, save, view status, and start the event.
 import { useEffect, useState } from "react";
 import { ApiError, errorMessage, moderatorStartEvent, moderatorUpdateConfig } from "../lib/api";
-import { formatClockIso, formatDuration, fromDatetimeLocal, toDatetimeLocal } from "../lib/format";
+import {
+  formatClockIso,
+  formatDateTime,
+  formatDuration,
+  fromDatetimeLocal,
+  toDatetimeLocal,
+} from "../lib/format";
 import { useModerator } from "./context";
 
 const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
@@ -24,6 +30,13 @@ export default function ConfigView() {
   const [queueMsg, setQueueMsg] = useState<string | null>(null);
   const [startMsg, setStartMsg] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+
+  // Live Vietnam clock so the moderator can set the start time correctly.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Seed the form from config whenever it (re)loads.
   const config = state?.config ?? null;
@@ -134,10 +147,20 @@ export default function ConfigView() {
       <section className={card}>
         <h2 className="text-lg font-semibold text-slate-900">Configuration</h2>
 
+        {/* Live current time so the start time can be set correctly. */}
+        <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-slate-900 px-4 py-3 text-white">
+          <span className="text-xs font-medium uppercase tracking-wide text-slate-300">
+            Current time (Vietnam · UTC+7)
+          </span>
+          <span className="font-mono text-lg font-semibold tabular-nums">
+            {formatDateTime(nowMs)}
+          </span>
+        </div>
+
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <div>
             <label className={label} htmlFor="event_start_time">
-              Event start time
+              Event start time <span className="font-normal text-slate-400">(Vietnam time)</span>
             </label>
             <input
               id="event_start_time"
@@ -146,6 +169,11 @@ export default function ConfigView() {
               value={startLocal}
               onChange={(e) => setStartLocal(e.target.value)}
             />
+            {state.config.event_start_time && (
+              <p className="mt-1 text-xs text-slate-500">
+                Saved start: {formatDateTime(Date.parse(state.config.event_start_time))}
+              </p>
+            )}
           </div>
 
           <div>

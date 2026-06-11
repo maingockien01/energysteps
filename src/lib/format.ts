@@ -1,16 +1,41 @@
 // Small formatting helpers shared across pages.
+//
+// All wall-clock times are pinned to VIETNAM time (Asia/Ho_Chi_Minh, UTC+7, no
+// DST) so every participant and moderator sees the same event time regardless
+// of their device's timezone. 24-hour format avoids AM/PM confusion.
 
-// "HH:MM" in the viewer's local time.
+export const EVENT_TZ = "Asia/Ho_Chi_Minh";
+const VN_OFFSET_MINUTES = 7 * 60; // Vietnam has no daylight saving — fixed +07:00
+
+// "HH:MM" in Vietnam time.
 export function formatClock(ms: number | null): string {
   if (ms === null) return "—";
-  const d = new Date(ms);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(ms).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: EVENT_TZ,
+  });
 }
 
 // "HH:MM" from an ISO string.
 export function formatClockIso(iso: string | null): string {
   if (!iso) return "—";
   return formatClock(Date.parse(iso));
+}
+
+// Full date + time in Vietnam, e.g. "Thu, 11 Jun 2026, 14:30:05".
+export function formatDateTime(ms: number | null): string {
+  if (ms === null) return "—";
+  return new Date(ms).toLocaleString("en-GB", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: EVENT_TZ,
+  });
 }
 
 // A run duration in seconds -> "10 min" / "1 min 30 s".
@@ -30,19 +55,24 @@ export function formatCountdown(seconds: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-// ISO datetime -> value for <input type="datetime-local"> in LOCAL time.
+// ISO datetime -> value for <input type="datetime-local">, expressed as
+// VIETNAM wall-clock time (so the moderator types/reads Vietnam time no matter
+// what timezone their device is in).
 export function toDatetimeLocal(iso: string | null): string {
   if (!iso) return "";
-  const d = new Date(iso);
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return "";
+  const d = new Date(ms + VN_OFFSET_MINUTES * 60000);
   const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours(),
-  )}:${pad(d.getMinutes())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(
+    d.getUTCHours(),
+  )}:${pad(d.getUTCMinutes())}`;
 }
 
-// <input type="datetime-local"> value (local) -> ISO string.
+// <input type="datetime-local"> value (interpreted as VIETNAM time) -> ISO.
 export function fromDatetimeLocal(value: string): string | null {
   if (!value) return null;
-  const d = new Date(value);
+  const wall = value.slice(0, 16); // YYYY-MM-DDTHH:mm
+  const d = new Date(`${wall}:00+07:00`);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }

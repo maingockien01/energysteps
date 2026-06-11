@@ -80,7 +80,10 @@ Access requires a PIN (see RELEASE.md step 5). The console has five tabs:
 
 ### 5. Config
 - Set the **event start time**, the **buffer** (seconds between runners), and the
-  **allowed run durations**.
+  **allowed run durations**. A live **current time in Vietnam (UTC+7)** clock is
+  shown so the start time can be set correctly. All clock times across the app
+  are displayed in Vietnam time (24-hour) regardless of the viewer's device
+  timezone; the start-time field is entered in Vietnam time.
 - The **number of machines** can be changed **only before the event starts** (and
   only before anyone has signed up — changing it would break permanent
   assignments). Once the event starts it is **locked**.
