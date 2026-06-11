@@ -4,6 +4,8 @@ import { ApiError, getStatusByEmail } from "../lib/api";
 import { computeProjection } from "../lib/queueLogic";
 import { formatClock } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { card } from "../lib/ui";
+import { useVisibilityPolling } from "../lib/usePolling";
 import {
   type AlertPermission,
   notificationPermission,
@@ -84,38 +86,12 @@ export default function StatusPage() {
   // 200 concurrent connections; with ~1000 signed-up users each holding the
   // status page open, websocket subscriptions here would be refused past 200.
   // A 30s poll is plenty: a waiting runner's position only moves when people
-  // ahead of them check in/out, and runs take minutes. We only poll while the
-  // tab is visible (no point hammering the DB for backgrounded phones), and
-  // fetch immediately on regaining focus so a returning user sees fresh data.
-  const POLL_INTERVAL_MS = 30_000;
-  useEffect(() => {
-    if (!submittedEmail) return;
-    let timer: ReturnType<typeof setInterval> | null = null;
-
-    const start = () => {
-      if (timer) return;
-      timer = setInterval(() => void fetchStatus(submittedEmail), POLL_INTERVAL_MS);
-    };
-    const stop = () => {
-      if (timer) clearInterval(timer);
-      timer = null;
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void fetchStatus(submittedEmail); // refresh immediately on focus
-        start();
-      } else {
-        stop();
-      }
-    };
-
-    if (document.visibilityState === "visible") start();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
+  // ahead of them check in/out, and runs take minutes. The initial fetch is
+  // driven by onSubmit, so no `immediate` here.
+  const poll = useCallback(() => {
+    if (submittedEmail) void fetchStatus(submittedEmail);
   }, [submittedEmail, fetchStatus]);
+  useVisibilityPolling(poll, { enabled: !!submittedEmail });
 
   const found = result?.found === true;
   const me = result?.me;
@@ -188,10 +164,7 @@ export default function StatusPage() {
         </header>
 
         {/* Lookup form */}
-        <form
-          onSubmit={onSubmit}
-          className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200"
-        >
+        <form onSubmit={onSubmit} className={card}>
           <label
             htmlFor="status-email"
             className="block text-sm font-medium text-slate-700"

@@ -3,9 +3,8 @@
 import { useModerator } from "./context";
 import { formatDateTimeNumericIso } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { card } from "../lib/ui";
 import type { Participant } from "../lib/types";
-
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
 
 // UTF-8 byte-order mark — makes Excel open Vietnamese CSV without mojibake.
 const BOM = "﻿";

@@ -7,9 +7,8 @@ import { useModerator } from "./context";
 import { moderatorGetActionLog } from "../lib/api";
 import { formatClockIso } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { card } from "../lib/ui";
 import type { ActionLogEntry } from "../lib/types";
-
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
 
 function pct(n: number, d: number): string {
   if (d === 0) return "—";

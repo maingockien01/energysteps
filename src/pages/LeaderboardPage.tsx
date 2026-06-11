@@ -2,15 +2,14 @@
 // the server) ranked by distance, plus department totals. Like the status page
 // it POLLS while visible (not Realtime) to stay under the Free-tier websocket
 // cap — see StatusPage.tsx for the rationale.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { getLeaderboard } from "../lib/api";
 import { formatDuration } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { card } from "../lib/ui";
+import { useVisibilityPolling } from "../lib/usePolling";
 import type { LeaderboardEntry, LeaderboardResult } from "../lib/types";
-
-const POLL_INTERVAL_MS = 30_000;
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
 
 function medal(rank: number): string {
   return rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
@@ -31,32 +30,7 @@ export default function LeaderboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    let timer: ReturnType<typeof setInterval> | null = null;
-    const start = () => {
-      if (timer) return;
-      timer = setInterval(() => void fetchBoard(), POLL_INTERVAL_MS);
-    };
-    const stop = () => {
-      if (timer) clearInterval(timer);
-      timer = null;
-    };
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        void fetchBoard();
-        start();
-      } else {
-        stop();
-      }
-    };
-    void fetchBoard();
-    if (document.visibilityState === "visible") start();
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [fetchBoard]);
+  useVisibilityPolling(fetchBoard, { immediate: true });
 
   const individuals = data?.individuals ?? [];
   const departments = data?.departments ?? [];

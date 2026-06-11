@@ -15,8 +15,8 @@ import {
 } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { useModerator } from "./context";
+import { card } from "../lib/ui";
 
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
 const label = "block text-sm font-medium text-slate-700";
 const input =
   "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";

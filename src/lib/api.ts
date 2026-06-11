@@ -157,78 +157,77 @@ export async function moderatorGetState(pin: string): Promise<ModeratorState> {
   return data as ModeratorState;
 }
 
-export async function moderatorCheckIn(pin: string, participantId: string) {
-  const { error } = await supabase.rpc("moderator_check_in", {
-    p_pin: pin,
-    p_participant_id: participantId,
-  });
+// Every moderator mutation has the same shape: call the RPC, surface any error
+// as an ApiError, then broadcast so other clients re-fetch the moved queue.
+async function moderatorMutation(
+  name: string,
+  params: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await supabase.rpc(name, params);
   if (error) throw toApiError(error);
   await broadcastChanged();
 }
 
-export async function moderatorCheckOut(
+export function moderatorCheckIn(pin: string, participantId: string) {
+  return moderatorMutation("moderator_check_in", {
+    p_pin: pin,
+    p_participant_id: participantId,
+  });
+}
+
+export function moderatorCheckOut(
   pin: string,
   participantId: string,
   distance: number | null,
   giftId: string | null,
 ) {
-  const { error } = await supabase.rpc("moderator_check_out", {
+  return moderatorMutation("moderator_check_out", {
     p_pin: pin,
     p_participant_id: participantId,
     p_distance: distance,
     p_gift_id: giftId,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
 // Move a waiting (signed_up) runner to a currently-free machine. The RPC
 // enforces that the target queue has no active runner (see migration 0007).
-export async function moderatorMoveParticipant(
+export function moderatorMoveParticipant(
   pin: string,
   participantId: string,
   targetQueueId: string,
 ) {
-  const { error } = await supabase.rpc("moderator_move_participant", {
+  return moderatorMutation("moderator_move_participant", {
     p_pin: pin,
     p_participant_id: participantId,
     p_target_queue_id: targetQueueId,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
-export async function moderatorSkip(
+export function moderatorSkip(
   pin: string,
   participantId: string,
   status: "skipped" | "no_show",
 ) {
-  const { error } = await supabase.rpc("moderator_skip", {
+  return moderatorMutation("moderator_skip", {
     p_pin: pin,
     p_participant_id: participantId,
     p_status: status,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
 // P1-3 — undo the last check-in / check-out for a runner.
-export async function moderatorUndoCheckIn(pin: string, participantId: string) {
-  const { error } = await supabase.rpc("moderator_undo_check_in", {
+export function moderatorUndoCheckIn(pin: string, participantId: string) {
+  return moderatorMutation("moderator_undo_check_in", {
     p_pin: pin,
     p_participant_id: participantId,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
-export async function moderatorUndoCheckOut(pin: string, participantId: string) {
-  const { error } = await supabase.rpc("moderator_undo_check_out", {
+export function moderatorUndoCheckOut(pin: string, participantId: string) {
+  return moderatorMutation("moderator_undo_check_out", {
     p_pin: pin,
     p_participant_id: participantId,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
 // P1-4 — recent moderator activity (audit view).
@@ -244,12 +243,12 @@ export async function moderatorGetActionLog(
   return data as ActionLogEntry[];
 }
 
-export async function moderatorUpdateParticipant(
+export function moderatorUpdateParticipant(
   pin: string,
   id: string,
   fields: { name: string; department: string; email: string; run_duration_seconds: number },
 ) {
-  const { error } = await supabase.rpc("moderator_update_participant", {
+  return moderatorMutation("moderator_update_participant", {
     p_pin: pin,
     p_id: id,
     p_name: fields.name,
@@ -257,43 +256,35 @@ export async function moderatorUpdateParticipant(
     p_email: fields.email,
     p_run_duration_seconds: fields.run_duration_seconds,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
-export async function moderatorCreateGift(pin: string, name: string, quantity: number) {
-  const { error } = await supabase.rpc("moderator_create_gift", {
+export function moderatorCreateGift(pin: string, name: string, quantity: number) {
+  return moderatorMutation("moderator_create_gift", {
     p_pin: pin,
     p_name: name,
     p_quantity: quantity,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
-export async function moderatorUpdateGift(
+export function moderatorUpdateGift(
   pin: string,
   id: string,
   fields: { name: string; total_quantity: number; remaining_quantity: number },
 ) {
-  const { error } = await supabase.rpc("moderator_update_gift", {
+  return moderatorMutation("moderator_update_gift", {
     p_pin: pin,
     p_id: id,
     p_name: fields.name,
     p_total_quantity: fields.total_quantity,
     p_remaining_quantity: fields.remaining_quantity,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
-export async function moderatorDeleteGift(pin: string, id: string) {
-  const { error } = await supabase.rpc("moderator_delete_gift", { p_pin: pin, p_id: id });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
+export function moderatorDeleteGift(pin: string, id: string) {
+  return moderatorMutation("moderator_delete_gift", { p_pin: pin, p_id: id });
 }
 
-export async function moderatorUpdateConfig(
+export function moderatorUpdateConfig(
   pin: string,
   cfg: {
     event_start_time: string | null;
@@ -303,7 +294,7 @@ export async function moderatorUpdateConfig(
     queue_count: number;
   },
 ) {
-  const { error } = await supabase.rpc("moderator_update_config", {
+  return moderatorMutation("moderator_update_config", {
     p_pin: pin,
     p_event_start_time: cfg.event_start_time,
     p_event_end_time: cfg.event_end_time,
@@ -311,19 +302,13 @@ export async function moderatorUpdateConfig(
     p_allowed_run_durations: cfg.allowed_run_durations,
     p_queue_count: cfg.queue_count,
   });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
 }
 
-export async function moderatorStartEvent(pin: string) {
-  const { error } = await supabase.rpc("moderator_start_event", { p_pin: pin });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
+export function moderatorStartEvent(pin: string) {
+  return moderatorMutation("moderator_start_event", { p_pin: pin });
 }
 
 // Restart event data: clears all participants, restores gift counts, un-starts.
-export async function moderatorResetEvent(pin: string) {
-  const { error } = await supabase.rpc("moderator_reset_event", { p_pin: pin });
-  if (error) throw toApiError(error);
-  await broadcastChanged();
+export function moderatorResetEvent(pin: string) {
+  return moderatorMutation("moderator_reset_event", { p_pin: pin });
 }

@@ -5,8 +5,7 @@
 // i18n. A language toggle is included because the moderator console chrome
 // doesn't carry one.
 import { LangToggle, useI18n } from "../lib/i18n";
-
-const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
+import { card } from "../lib/ui";
 
 type Block =
   | { kind: "p"; text: string }

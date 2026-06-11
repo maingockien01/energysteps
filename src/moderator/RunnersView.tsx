@@ -8,21 +8,8 @@ import { ApiError, moderatorUpdateParticipant } from "../lib/api";
 import { formatDateTimeNumericIso, formatDuration } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { matchesVN } from "../lib/text";
+import { statusPillClass } from "../lib/ui";
 import type { Participant } from "../lib/types";
-
-function statusPillClass(status: string): string {
-  switch (status) {
-    case "checked_in":
-      return "bg-emerald-100 text-emerald-800";
-    case "finished":
-      return "bg-slate-200 text-slate-700";
-    case "skipped":
-    case "no_show":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
-}
 
 export default function RunnersView() {
   const t = useT();
