@@ -1,6 +1,12 @@
 // Event configuration: edit config fields, save, view status, and start the event.
 import { useEffect, useState } from "react";
-import { ApiError, errorMessage, moderatorStartEvent, moderatorUpdateConfig } from "../lib/api";
+import {
+  ApiError,
+  errorMessage,
+  moderatorResetEvent,
+  moderatorStartEvent,
+  moderatorUpdateConfig,
+} from "../lib/api";
 import {
   formatClockIso,
   formatDateTime,
@@ -30,6 +36,8 @@ export default function ConfigView() {
   const [queueMsg, setQueueMsg] = useState<string | null>(null);
   const [startMsg, setStartMsg] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
   // Live Vietnam clock so the moderator can set the start time correctly.
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -98,6 +106,26 @@ export default function ConfigView() {
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleReset() {
+    setResetMsg(null);
+    const ok = window.confirm(
+      "RESTART EVENT DATA?\n\nThis permanently DELETES every participant and result, " +
+        "restores all gift quantities, and un-starts the event. Machines, buffer, " +
+        "durations, start time and PINs are kept. This cannot be undone.",
+    );
+    if (!ok) return;
+    setResetting(true);
+    try {
+      await moderatorResetEvent(pin);
+      await reload();
+      setResetMsg("Event data reset.");
+    } catch (e) {
+      setResetMsg(e instanceof ApiError ? errorMessage(e.code) : "Something went wrong.");
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -307,6 +335,25 @@ export default function ConfigView() {
           </p>
         )}
         {startMsg && <p className="mt-2 text-sm text-red-600">{startMsg}</p>}
+      </section>
+
+      {/* Danger zone: restart event data */}
+      <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-red-200">
+        <h2 className="text-lg font-semibold text-red-700">Danger zone</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Restart the event: delete <strong>all participants and results</strong>, restore gift
+          quantities, and un-start the event. Machines, buffer, durations, start time and PINs are
+          kept. Use this to clear test data before the real event. This cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleReset()}
+          disabled={resetting}
+          className="mt-4 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {resetting ? "Resetting…" : "Restart event data"}
+        </button>
+        {resetMsg && <p className="mt-2 text-sm text-slate-700">{resetMsg}</p>}
       </section>
     </div>
   );

@@ -178,6 +178,15 @@ export default function BoardView() {
   const checkInElapsed = checkInRemaining < 0;
   const runElapsed = runRemaining < 0;
 
+  // Derived display states. When the check-in window elapses, the slot clock is
+  // already running (it's anchored to the previous runner's checkout, NOT to
+  // check-in — see queueLogic), so we AUTO-roll into the run countdown without
+  // needing a manual check-in. In that auto-running state we do NOT offer
+  // "Check in" so a moderator can't trigger a late/overlapping check-in.
+  const inCheckinWindow = timer.phase === "awaiting_checkin" && !checkInElapsed;
+  const autoRunning = timer.phase === "awaiting_checkin" && checkInElapsed;
+  const showRun = autoRunning || timer.phase === "running";
+
   const availableGifts = gifts.filter((g) => g.remaining_quantity > 0);
 
   return (
@@ -240,7 +249,7 @@ export default function BoardView() {
           </p>
         )}
 
-        {timer.phase === "awaiting_checkin" && head && (
+        {inCheckinWindow && head && (
           <div className="space-y-5">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
@@ -253,25 +262,15 @@ export default function BoardView() {
             </div>
 
             <div>
-              <div
-                className={`text-xs font-medium uppercase tracking-wide ${
-                  checkInElapsed ? "text-red-600" : "text-amber-600"
-                }`}
-              >
+              <div className="text-xs font-medium uppercase tracking-wide text-amber-600">
                 Check-in window
               </div>
-              <div
-                className={`font-mono text-6xl font-bold tabular-nums ${
-                  checkInElapsed ? "text-red-600" : "text-amber-600"
-                }`}
-              >
-                {checkInElapsed ? "0:00" : formatCountdown(checkInRemaining)}
+              <div className="font-mono text-6xl font-bold tabular-nums text-amber-600">
+                {formatCountdown(checkInRemaining)}
               </div>
-              {checkInElapsed && (
-                <div className="text-sm font-medium text-red-600">
-                  Check-in window elapsed — you can still check them in.
-                </div>
-              )}
+              <div className="text-sm text-slate-500">
+                Run time starts automatically when this reaches 0:00.
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -300,17 +299,23 @@ export default function BoardView() {
           </div>
         )}
 
-        {timer.phase === "running" && head && (
+        {showRun && head && (
           <div className="space-y-5">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-emerald-600">
-                Running · position {head.position_in_queue}
+                {autoRunning ? "Running (auto-started)" : "Running"} · position{" "}
+                {head.position_in_queue}
               </div>
               <div className="mt-1 text-2xl font-bold text-slate-900">{head.name}</div>
               <div className="text-sm text-slate-600">
-                {head.department} · {formatDuration(head.run_duration_seconds)} run ·
-                started {formatClockIso(head.actual_start)}
+                {head.department} · {formatDuration(head.run_duration_seconds)} run
+                {timer.phase === "running" && <> · started {formatClockIso(head.actual_start)}</>}
               </div>
+              {autoRunning && (
+                <div className="mt-1 text-sm font-medium text-amber-600">
+                  Check-in window ended — the slot clock is running. Check them out when done.
+                </div>
+              )}
             </div>
 
             <div>

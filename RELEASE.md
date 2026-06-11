@@ -11,10 +11,11 @@ A complete, non-expert walkthrough from zero to a live URL. Follow top to bottom
      password (you won't need it again for this app), choose a region near you.
    - Wait ~2 minutes for it to provision.
 2. In the left sidebar open **SQL Editor → New query**.
-3. Open the file `supabase/migrations/0001_init.sql` from this repo, copy its
-   **entire** contents, paste into the SQL editor, and click **Run**.
-   - It should finish with "Success. No rows returned." This creates all tables,
-     the security policies, and the functions the app calls.
+3. Run **each** file in `supabase/migrations/` **in order**. For each one, open
+   it, copy its **entire** contents, paste into the SQL editor, and click **Run**:
+   1. `0001_init.sql` — tables, security policies, and the functions the app calls.
+   2. `0002_reset_event.sql` — the "Restart event data" function.
+   - Each should finish with "Success. No rows returned."
 4. Set your real moderator PIN(s). Still in the SQL editor, run (replace with
    your own PINs; one row per PIN):
    ```sql

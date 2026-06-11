@@ -227,3 +227,10 @@ export async function moderatorStartEvent(pin: string) {
   if (error) throw toApiError(error);
   await broadcastChanged();
 }
+
+// Restart event data: clears all participants, restores gift counts, un-starts.
+export async function moderatorResetEvent(pin: string) {
+  const { error } = await supabase.rpc("moderator_reset_event", { p_pin: pin });
+  if (error) throw toApiError(error);
+  await broadcastChanged();
+}

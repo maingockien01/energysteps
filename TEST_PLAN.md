@@ -156,6 +156,23 @@ against a live Supabase project (see RELEASE.md) with the dev server
     function, not the table) — the Board shows full names. And confirm an
     **invalid PIN** is rejected at `/moderator` (try `0000`).
 
+## M. Auto-start when the check-in window ends
+29. Set a short buffer (e.g. 30 s) in Config, add a short run duration, sign up a
+    runner, and Start the event. On the Board, do **not** check the head in; let
+    the "Check-in window" countdown reach 0:00.
+    *Expected:* the board **automatically** switches to "Running (auto-started)"
+    with a "Run time remaining" countdown (anchored to the slot, so it shows less
+    than a full run). The **"Check in" button disappears** — only "Check out" and
+    "Skip" remain, so no late/overlapping check-in is possible. The run countdown
+    never resets regardless of timing (server-timestamp driven).
+
+## N. Restart event data
+30. In Config → Danger zone, click **Restart event data** and confirm.
+    *Expected:* all participants/results are deleted, the event shows "Not
+    started", `queue_count` is editable again, and every gift's remaining count is
+    restored to its total. Machines, buffer, durations, start time, and PINs are
+    unchanged.
+
 ---
 
 ### Automated coverage

@@ -53,6 +53,13 @@ Access requires a PIN (see RELEASE.md step 5). The console has five tabs:
     Because the slot is anchored to the previous checkout (not to check-in), a
     runner who checks in **late has less time remaining** in their slot — this is
     shown directly on the timer.
+  - **Auto-start:** if the check-in window reaches 0:00 without a check-in, the
+    board **automatically rolls into the run countdown** ("Running (auto-started)")
+    — the slot clock is already running (it's anchored to the previous checkout),
+    so no manual action is needed. Once auto-running, the **"Check in" button is
+    removed** (the next action is "Check out"), so a moderator can't trigger a
+    late/overlapping check-in. The remaining run time is fully **server-timestamp
+    driven** and never resets, regardless of when (or whether) a check-in happens.
 - **Check in** sets the runner to *running* and **auto-stamps the start time**
   (the moderator never types a time).
 - **Check out** prompts only for **distance** and an optional **gift**, then
@@ -90,6 +97,10 @@ Access requires a PIN (see RELEASE.md step 5). The console has five tabs:
 - **Start event** captures every signed-up runner's **original estimated start**
   (event start + cumulative `run + buffer` of everyone ahead in their queue),
   which becomes **immutable**, and locks the machine count.
+- **Restart event data** (danger zone): deletes all participants and results,
+  restores every gift's quantity, and un-starts the event so a fresh run can
+  begin. Machines, buffer, durations, start time and PINs are kept. Requires a
+  confirmation. Use it to clear test data before the real event.
 
 ### 6. Export
 - One click downloads a **CSV** of every participant and their results: name,
