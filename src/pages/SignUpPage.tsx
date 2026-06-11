@@ -120,7 +120,7 @@ export default function SignUpPage() {
       <div className="mx-auto w-full max-w-md">
         <header className="mb-8 text-center">
           <img
-            src="/AMZ_Time_2026.png"
+            src="/AMZ_Time_2026.webp"
             alt=""
             aria-hidden
             className="mx-auto mb-4 h-40 w-auto drop-shadow-sm"
