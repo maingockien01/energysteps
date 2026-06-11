@@ -5,8 +5,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getLeaderboard } from "../lib/api";
+import { formatDuration } from "../lib/format";
 import { useT, LangToggle } from "../lib/i18n";
-import type { LeaderboardResult } from "../lib/types";
+import type { LeaderboardEntry, LeaderboardResult } from "../lib/types";
 
 const POLL_INTERVAL_MS = 30_000;
 const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
@@ -61,6 +62,17 @@ export default function LeaderboardPage() {
   const departments = data?.departments ?? [];
   const empty = !loading && individuals.length === 0;
 
+  // Categorize individuals by chosen run duration (ascending) — distance is only
+  // comparable within the same run length. Each tier is already distance-sorted
+  // by the RPC.
+  const tiers = new Map<number, LeaderboardEntry[]>();
+  for (const e of individuals) {
+    const list = tiers.get(e.duration) ?? [];
+    list.push(e);
+    tiers.set(e.duration, list);
+  }
+  const tierDurations = [...tiers.keys()].sort((a, b) => a - b);
+
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto w-full max-w-2xl">
@@ -78,33 +90,42 @@ export default function LeaderboardPage() {
           <div className={`${card} text-slate-600`}>{t("lb.empty")}</div>
         ) : (
           <div className="space-y-6">
-            {/* Individuals */}
-            <section className={card}>
-              <h2 className="text-lg font-semibold text-brand">{t("lb.individuals")}</h2>
-              <ol className="mt-3 divide-y divide-slate-100">
-                {individuals.map((e, i) => (
-                  <li
-                    key={`${e.display_name}-${i}`}
-                    className="flex items-center justify-between py-2.5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 text-center text-sm font-semibold text-slate-500">
-                        {medal(i + 1)}
-                      </span>
-                      <div>
-                        <div className="text-sm font-medium text-slate-900">
-                          {e.display_name}
+            {/* Individuals, categorized by run duration */}
+            {tierDurations.map((dur) => (
+              <section key={dur} className={card}>
+                <div className="flex items-baseline justify-between">
+                  <h2 className="text-lg font-semibold text-brand">
+                    {t("lb.category", { d: formatDuration(dur) })}
+                  </h2>
+                  <span className="text-xs text-slate-400">
+                    {t("lb.finishers", { n: tiers.get(dur)!.length })}
+                  </span>
+                </div>
+                <ol className="mt-3 divide-y divide-slate-100">
+                  {tiers.get(dur)!.map((e, i) => (
+                    <li
+                      key={`${dur}-${e.display_name}-${i}`}
+                      className="flex items-center justify-between py-2.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="w-8 text-center text-sm font-semibold text-slate-500">
+                          {medal(i + 1)}
+                        </span>
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">
+                            {e.display_name}
+                          </div>
+                          <div className="text-xs text-slate-500">{e.department}</div>
                         </div>
-                        <div className="text-xs text-slate-500">{e.department}</div>
                       </div>
-                    </div>
-                    <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">
-                      {t("lb.meters", { n: e.distance })}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </section>
+                      <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">
+                        {t("lb.meters", { n: e.distance })}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ))}
 
             {/* Departments */}
             {departments.length > 0 && (

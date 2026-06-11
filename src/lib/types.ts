@@ -93,6 +93,7 @@ export interface LeaderboardEntry {
   display_name: string;
   department: string;
   distance: number;
+  duration: number; // run_duration_seconds — leaderboard is categorized by this
 }
 export interface DepartmentTotal {
   department: string;
