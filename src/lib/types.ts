@@ -88,6 +88,7 @@ export interface ModeratorState {
 export type ApiErrorCode =
   | "EMAIL_TAKEN"
   | "INVALID_DURATION"
+  | "INVALID_EMAIL_DOMAIN"
   | "INVALID_PIN"
   | "INVALID_STATUS"
   | "QUEUE_COUNT_LOCKED"

@@ -7,7 +7,6 @@ import { useModerator } from "./context";
 import { computeSlotTimer } from "../lib/queueLogic";
 import {
   ApiError,
-  errorMessage,
   moderatorCheckIn,
   moderatorCheckOut,
   moderatorSkip,
@@ -17,26 +16,10 @@ import {
   formatCountdown,
   formatDuration,
 } from "../lib/format";
+import { useT } from "../lib/i18n";
 import type { Participant, Queue } from "../lib/types";
 
 const DONE = new Set(["finished", "skipped", "no_show"]);
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "signed_up":
-      return "Signed up";
-    case "checked_in":
-      return "Running";
-    case "finished":
-      return "Finished";
-    case "skipped":
-      return "Skipped";
-    case "no_show":
-      return "No-show";
-    default:
-      return status;
-  }
-}
 
 function statusPillClass(status: string): string {
   switch (status) {
@@ -53,6 +36,7 @@ function statusPillClass(status: string): string {
 }
 
 export default function BoardView() {
+  const t = useT();
   const { state, pin, reload } = useModerator();
 
   const [selectedQueueId, setSelectedQueueId] = useState<string | null>(null);
@@ -93,7 +77,7 @@ export default function BoardView() {
   }, [state]);
 
   if (!state) {
-    return <div className="text-slate-400">Loading board…</div>;
+    return <div className="text-slate-400">{t("board.loading")}</div>;
   }
 
   const { config, queues, gifts } = state;
@@ -101,12 +85,12 @@ export default function BoardView() {
   if (queues.length === 0) {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 text-slate-600">
-        No queues configured yet. Set the number of machines in the Config tab.
+        {t("board.noQueues")}
       </div>
     );
   }
 
-  const selectedQueue: Queue | undefined =
+  const selectedQueue: Queue =
     queues.find((q) => q.id === selectedQueueId) ?? queues[0];
   const queueParticipants = byQueue.get(selectedQueue.id) ?? [];
 
@@ -130,8 +114,8 @@ export default function BoardView() {
       await fn();
       await reload();
     } catch (e) {
-      if (e instanceof ApiError) setMsg(errorMessage(e.code));
-      else setMsg("Something went wrong. Please try again.");
+      if (e instanceof ApiError) setMsg(t(`error.${e.code}`));
+      else setMsg(t("common.wrong"));
     } finally {
       setBusy(false);
     }
@@ -153,7 +137,7 @@ export default function BoardView() {
     const trimmed = distanceInput.trim();
     const distance = trimmed === "" ? null : Number(trimmed);
     if (distance !== null && Number.isNaN(distance)) {
-      setMsg("Distance must be a number, or leave it blank.");
+      setMsg(t("board.distanceNaN"));
       return;
     }
     const giftId = giftInput === "" ? null : giftInput;
@@ -163,8 +147,11 @@ export default function BoardView() {
 
   function onSkip(status: "no_show" | "skipped") {
     if (!head) return;
-    const verb = status === "no_show" ? "mark as a no-show" : "skip";
-    if (!window.confirm(`Are you sure you want to ${verb} ${head.name}? This advances the queue.`)) {
+    if (
+      !window.confirm(
+        t("board.confirmSkip", { verb: t(`board.verb.${status}`), name: head.name }),
+      )
+    ) {
       return;
     }
     void run(() => moderatorSkip(pin, head.id, status));
@@ -178,11 +165,7 @@ export default function BoardView() {
   const checkInElapsed = checkInRemaining < 0;
   const runElapsed = runRemaining < 0;
 
-  // Derived display states. When the check-in window elapses, the slot clock is
-  // already running (it's anchored to the previous runner's checkout, NOT to
-  // check-in — see queueLogic), so we AUTO-roll into the run countdown without
-  // needing a manual check-in. In that auto-running state we do NOT offer
-  // "Check in" so a moderator can't trigger a late/overlapping check-in.
+  // Derived display states (see queueLogic for the auto-roll rationale).
   const inCheckinWindow = timer.phase === "awaiting_checkin" && !checkInElapsed;
   const autoRunning = timer.phase === "awaiting_checkin" && checkInElapsed;
   const showRun = autoRunning || timer.phase === "running";
@@ -208,20 +191,20 @@ export default function BoardView() {
               onClick={() => setSelectedQueueId(q.id)}
               className={`min-w-[10rem] rounded-2xl px-4 py-3 text-left shadow-sm ring-1 transition ${
                 active
-                  ? "bg-slate-900 text-white ring-slate-900"
-                  : "bg-white text-slate-700 ring-slate-200 hover:ring-slate-400"
+                  ? "bg-brand text-white ring-brand"
+                  : "bg-white text-slate-700 ring-slate-200 hover:ring-brand/50"
               }`}
             >
               <div className="text-sm font-semibold">{q.name}</div>
               <div
                 className={`mt-0.5 truncate text-xs ${
-                  active ? "text-slate-300" : "text-slate-500"
+                  active ? "text-white/80" : "text-slate-500"
                 }`}
               >
                 {qTimer.phase === "queue_complete"
-                  ? "Complete"
+                  ? t("board.complete")
                   : qHead
-                    ? `${qHead.name} · ${statusLabel(qHead.status)}`
+                    ? `${qHead.name} · ${t(`st.${qHead.status}`)}`
                     : "—"}
               </div>
             </button>
@@ -238,14 +221,12 @@ export default function BoardView() {
       {/* Head / current slot */}
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         {timer.phase === "no_start_time" && (
-          <p className="text-slate-600">
-            Set an event start time and Start the event in the Config tab.
-          </p>
+          <p className="text-slate-600">{t("board.noStartTime")}</p>
         )}
 
         {timer.phase === "queue_complete" && (
           <p className="text-lg font-semibold text-emerald-700">
-            ✅ Queue complete — all runners done.
+            {t("board.queueComplete")}
           </p>
         )}
 
@@ -253,24 +234,22 @@ export default function BoardView() {
           <div className="space-y-5">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
-                Awaiting check-in · position {head.position_in_queue}
+                {t("board.awaitingCheckin", { n: head.position_in_queue })}
               </div>
               <div className="mt-1 text-2xl font-bold text-slate-900">{head.name}</div>
               <div className="text-sm text-slate-600">
-                {head.department} · {formatDuration(head.run_duration_seconds)} run
+                {head.department} · {formatDuration(head.run_duration_seconds)}
               </div>
             </div>
 
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-amber-600">
-                Check-in window
+                {t("board.checkinWindow")}
               </div>
               <div className="font-mono text-6xl font-bold tabular-nums text-amber-600">
                 {formatCountdown(checkInRemaining)}
               </div>
-              <div className="text-sm text-slate-500">
-                Run time starts automatically when this reaches 0:00.
-              </div>
+              <div className="text-sm text-slate-500">{t("board.autoStartNote")}</div>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -279,21 +258,21 @@ export default function BoardView() {
                 onClick={onCheckIn}
                 className="rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
               >
-                Check in
+                {t("board.checkIn")}
               </button>
               <button
                 disabled={busy}
                 onClick={() => onSkip("no_show")}
                 className="rounded-xl bg-white px-5 py-2.5 font-semibold text-red-700 ring-1 ring-red-300 hover:bg-red-50 disabled:opacity-50"
               >
-                No-show
+                {t("board.noShow")}
               </button>
               <button
                 disabled={busy}
                 onClick={() => onSkip("skipped")}
                 className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
               >
-                Skip
+                {t("board.skip")}
               </button>
             </div>
           </div>
@@ -303,17 +282,19 @@ export default function BoardView() {
           <div className="space-y-5">
             <div>
               <div className="text-xs font-medium uppercase tracking-wide text-emerald-600">
-                {autoRunning ? "Running (auto-started)" : "Running"} · position{" "}
-                {head.position_in_queue}
+                {autoRunning ? t("board.runningAuto") : t("board.running")} ·{" "}
+                {t("board.position", { n: head.position_in_queue })}
               </div>
               <div className="mt-1 text-2xl font-bold text-slate-900">{head.name}</div>
               <div className="text-sm text-slate-600">
-                {head.department} · {formatDuration(head.run_duration_seconds)} run
-                {timer.phase === "running" && <> · started {formatClockIso(head.actual_start)}</>}
+                {head.department} · {formatDuration(head.run_duration_seconds)}
+                {timer.phase === "running" && (
+                  <> · {t("board.startedAt", { time: formatClockIso(head.actual_start) })}</>
+                )}
               </div>
               {autoRunning && (
                 <div className="mt-1 text-sm font-medium text-amber-600">
-                  Check-in window ended — the slot clock is running. Check them out when done.
+                  {t("board.autoRunningNote")}
                 </div>
               )}
             </div>
@@ -324,7 +305,7 @@ export default function BoardView() {
                   runElapsed ? "text-red-600" : "text-emerald-600"
                 }`}
               >
-                Run time remaining
+                {t("board.runRemaining")}
               </div>
               <div
                 className={`font-mono text-6xl font-bold tabular-nums ${
@@ -335,7 +316,7 @@ export default function BoardView() {
               </div>
               {runElapsed && (
                 <div className="text-sm font-medium text-red-600">
-                  Slot time elapsed — check them out to advance the queue.
+                  {t("board.slotElapsed")}
                 </div>
               )}
             </div>
@@ -344,16 +325,16 @@ export default function BoardView() {
               <button
                 disabled={busy}
                 onClick={openCheckout}
-                className="rounded-xl bg-slate-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+                className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-50"
               >
-                Check out
+                {t("board.checkOut")}
               </button>
               <button
                 disabled={busy}
                 onClick={() => onSkip("skipped")}
                 className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
               >
-                Skip
+                {t("board.skip")}
               </button>
             </div>
           </div>
@@ -364,12 +345,12 @@ export default function BoardView() {
       {checkoutOpen && head && (
         <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-300">
           <div className="text-lg font-semibold text-slate-900">
-            Check out {head.name}
+            {t("board.checkOutTitle", { name: head.name })}
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">
-                Distance logged (optional)
+                {t("board.distance")}
               </span>
               <input
                 type="number"
@@ -377,20 +358,20 @@ export default function BoardView() {
                 value={distanceInput}
                 onChange={(e) => setDistanceInput(e.target.value)}
                 placeholder="e.g. 1500"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Gift</span>
+              <span className="text-sm font-medium text-slate-700">{t("board.gift")}</span>
               <select
                 value={giftInput}
                 onChange={(e) => setGiftInput(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
               >
-                <option value="">No gift</option>
+                <option value="">{t("board.noGift")}</option>
                 {availableGifts.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {g.name} ({g.remaining_quantity} left)
+                    {t("board.giftLeft", { name: g.name, n: g.remaining_quantity })}
                   </option>
                 ))}
               </select>
@@ -400,16 +381,16 @@ export default function BoardView() {
             <button
               disabled={busy}
               onClick={confirmCheckout}
-              className="rounded-xl bg-slate-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+              className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-50"
             >
-              Confirm check-out
+              {t("board.confirmCheckout")}
             </button>
             <button
               disabled={busy}
               onClick={() => setCheckoutOpen(false)}
               className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           </div>
         </div>
@@ -417,9 +398,9 @@ export default function BoardView() {
 
       {/* Upcoming */}
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="text-sm font-semibold text-slate-900">Up next</div>
+        <div className="text-sm font-semibold text-slate-900">{t("board.upNext")}</div>
         {upcoming.length === 0 ? (
-          <p className="mt-2 text-sm text-slate-500">No more runners in line.</p>
+          <p className="mt-2 text-sm text-slate-500">{t("board.noMore")}</p>
         ) : (
           <ul className="mt-3 divide-y divide-slate-100">
             {upcoming.map((p, i) => (
@@ -440,7 +421,7 @@ export default function BoardView() {
                     p.status,
                   )}`}
                 >
-                  {statusLabel(p.status)}
+                  {t(`st.${p.status}`)}
                 </span>
               </li>
             ))}
@@ -452,24 +433,24 @@ export default function BoardView() {
       {doneList.length > 0 && (
         <details className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
           <summary className="cursor-pointer text-sm font-semibold text-slate-700">
-            Finished &amp; skipped ({doneList.length})
+            {t("board.doneCollapsed", { n: doneList.length })}
           </summary>
           <ul className="mt-3 divide-y divide-slate-100">
             {doneList.map((p) => (
               <li key={p.id} className="flex items-center justify-between py-2">
                 <div className="text-sm text-slate-700">
                   <span className="font-medium">{p.name}</span>
-                  <span className="text-slate-400">
-                    {" "}
-                    · {p.department}
-                  </span>
+                  <span className="text-slate-400"> · {p.department}</span>
                   {p.status === "finished" && p.distance_logged !== null && (
-                    <span className="text-slate-400"> · {p.distance_logged} logged</span>
+                    <span className="text-slate-400">
+                      {" "}
+                      · {t("board.logged", { n: p.distance_logged })}
+                    </span>
                   )}
                   {p.status === "finished" && (
                     <span className="text-slate-400">
                       {" "}
-                      · out {formatClockIso(p.actual_finish)}
+                      · {t("board.out", { time: formatClockIso(p.actual_finish) })}
                     </span>
                   )}
                 </div>
@@ -478,7 +459,7 @@ export default function BoardView() {
                     p.status,
                   )}`}
                 >
-                  {statusLabel(p.status)}
+                  {t(`st.${p.status}`)}
                 </span>
               </li>
             ))}

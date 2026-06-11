@@ -38,6 +38,31 @@ export function formatDateTime(ms: number | null): string {
   });
 }
 
+// Numeric date+time in Vietnam, "DD/MM/YYYY HH:mm:ss" (registration timestamp).
+export function formatDateTimeNumeric(ms: number | null): string {
+  if (ms === null) return "—";
+  // en-GB with a 2-digit setup yields DD/MM/YYYY, HH:mm:ss; drop the comma.
+  return new Date(ms)
+    .toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: EVENT_TZ,
+    })
+    .replace(",", "");
+}
+
+// Same as above but accepts an ISO string.
+export function formatDateTimeNumericIso(iso: string | null): string {
+  if (!iso) return "—";
+  const ms = Date.parse(iso);
+  return Number.isNaN(ms) ? "—" : formatDateTimeNumeric(ms);
+}
+
 // A run duration in seconds -> "10 min" / "1 min 30 s".
 export function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);

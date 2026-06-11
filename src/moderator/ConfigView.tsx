@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import {
   ApiError,
-  errorMessage,
   moderatorResetEvent,
   moderatorStartEvent,
   moderatorUpdateConfig,
@@ -14,14 +13,16 @@ import {
   fromDatetimeLocal,
   toDatetimeLocal,
 } from "../lib/format";
+import { useT } from "../lib/i18n";
 import { useModerator } from "./context";
 
 const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
 const label = "block text-sm font-medium text-slate-700";
 const input =
-  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900";
+  "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
 export default function ConfigView() {
+  const t = useT();
   const { state, pin, reload } = useModerator();
 
   // Form fields (local copies of config).
@@ -57,7 +58,7 @@ export default function ConfigView() {
   }, [config]);
 
   if (!state) {
-    return <div className="text-slate-400">Loading…</div>;
+    return <div className="text-slate-400">{t("cfg.loading")}</div>;
   }
 
   const eventStarted = state.config.event_started;
@@ -80,7 +81,7 @@ export default function ConfigView() {
     setSaveMsg(null);
     setQueueMsg(null);
     if (durations.length === 0) {
-      setSaveMsg("Add at least one run duration.");
+      setSaveMsg(t("cfg.addDurationOne"));
       return;
     }
     setSaving(true);
@@ -91,18 +92,18 @@ export default function ConfigView() {
         allowed_run_durations: durations,
         queue_count: queueCount,
       });
-      setSaveMsg("Saved.");
+      setSaveMsg(t("common.saved"));
       await reload();
     } catch (e) {
       if (e instanceof ApiError) {
-        const text = errorMessage(e.code);
+        const text = t(`error.${e.code}`);
         if (e.code === "QUEUE_COUNT_HAS_SIGNUPS" || e.code === "QUEUE_COUNT_LOCKED") {
           setQueueMsg(text);
         } else {
           setSaveMsg(text);
         }
       } else {
-        setSaveMsg("Something went wrong. Please try again.");
+        setSaveMsg(t("common.wrong"));
       }
     } finally {
       setSaving(false);
@@ -111,19 +112,15 @@ export default function ConfigView() {
 
   async function handleReset() {
     setResetMsg(null);
-    const ok = window.confirm(
-      "RESTART EVENT DATA?\n\nThis permanently DELETES every participant and result, " +
-        "restores all gift quantities, and un-starts the event. Machines, buffer, " +
-        "durations, start time and PINs are kept. This cannot be undone.",
-    );
+    const ok = window.confirm(t("cfg.resetConfirm"));
     if (!ok) return;
     setResetting(true);
     try {
       await moderatorResetEvent(pin);
       await reload();
-      setResetMsg("Event data reset.");
+      setResetMsg(t("cfg.resetDone"));
     } catch (e) {
-      setResetMsg(e instanceof ApiError ? errorMessage(e.code) : "Something went wrong.");
+      setResetMsg(e instanceof ApiError ? t(`error.${e.code}`) : t("common.wrong"));
     } finally {
       setResetting(false);
     }
@@ -131,9 +128,7 @@ export default function ConfigView() {
 
   async function handleStart() {
     setStartMsg(null);
-    const ok = window.confirm(
-      "This captures everyone's estimated times and locks the machine count. Continue?",
-    );
+    const ok = window.confirm(t("cfg.startConfirm"));
     if (!ok) return;
     setStarting(true);
     try {
@@ -141,9 +136,9 @@ export default function ConfigView() {
       await reload();
     } catch (e) {
       if (e instanceof ApiError) {
-        setStartMsg(errorMessage(e.code));
+        setStartMsg(t(`error.${e.code}`));
       } else {
-        setStartMsg("Something went wrong. Please try again.");
+        setStartMsg(t("common.wrong"));
       }
     } finally {
       setStarting(false);
@@ -154,18 +149,18 @@ export default function ConfigView() {
     <div className="space-y-6">
       {/* Event status */}
       <section className={card}>
-        <h2 className="text-lg font-semibold text-slate-900">Event status</h2>
+        <h2 className="text-lg font-semibold text-brand">{t("cfg.statusTitle")}</h2>
         {eventStarted ? (
           <p className="mt-2 text-sm text-slate-700">
             <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-              Started
+              {t("cfg.started")}
             </span>{" "}
-            at {formatClockIso(state.config.started_at)}
+            {t("cfg.startedAt", { time: formatClockIso(state.config.started_at) })}
           </p>
         ) : (
           <p className="mt-2 text-sm text-slate-700">
             <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-              Not started
+              {t("cfg.notStarted")}
             </span>
           </p>
         )}
@@ -173,12 +168,12 @@ export default function ConfigView() {
 
       {/* Configuration form */}
       <section className={card}>
-        <h2 className="text-lg font-semibold text-slate-900">Configuration</h2>
+        <h2 className="text-lg font-semibold text-brand">{t("cfg.title")}</h2>
 
         {/* Live current time so the start time can be set correctly. */}
         <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-slate-900 px-4 py-3 text-white">
           <span className="text-xs font-medium uppercase tracking-wide text-slate-300">
-            Current time (Vietnam · UTC+7)
+            {t("cfg.currentTime")}
           </span>
           <span className="font-mono text-lg font-semibold tabular-nums">
             {formatDateTime(nowMs)}
@@ -188,7 +183,8 @@ export default function ConfigView() {
         <div className="mt-4 grid gap-5 sm:grid-cols-2">
           <div>
             <label className={label} htmlFor="event_start_time">
-              Event start time <span className="font-normal text-slate-400">(Vietnam time)</span>
+              {t("cfg.startTime")}{" "}
+              <span className="font-normal text-slate-400">{t("cfg.vnTime")}</span>
             </label>
             <input
               id="event_start_time"
@@ -199,14 +195,16 @@ export default function ConfigView() {
             />
             {state.config.event_start_time && (
               <p className="mt-1 text-xs text-slate-500">
-                Saved start: {formatDateTime(Date.parse(state.config.event_start_time))}
+                {t("cfg.savedStart", {
+                  time: formatDateTime(Date.parse(state.config.event_start_time)),
+                })}
               </p>
             )}
           </div>
 
           <div>
             <label className={label} htmlFor="buffer_seconds">
-              Buffer (seconds)
+              {t("cfg.buffer")}
             </label>
             <input
               id="buffer_seconds"
@@ -219,12 +217,10 @@ export default function ConfigView() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className={label}>Allowed run durations</label>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Add new durations in minutes. At least one is required.
-            </p>
+            <label className={label}>{t("cfg.durations")}</label>
+            <p className="mt-0.5 text-xs text-slate-500">{t("cfg.durationsHint")}</p>
             {durations.length === 0 ? (
-              <p className="mt-2 text-sm text-amber-700">No durations yet — add at least one.</p>
+              <p className="mt-2 text-sm text-amber-700">{t("cfg.noDurations")}</p>
             ) : (
               <ul className="mt-2 flex flex-wrap gap-2">
                 {durations.map((d) => (
@@ -237,7 +233,7 @@ export default function ConfigView() {
                       type="button"
                       onClick={() => removeDuration(d)}
                       className="text-slate-500 hover:text-red-600"
-                      aria-label={`Remove ${formatDuration(d)}`}
+                      aria-label={t("cfg.removeDuration", { d: formatDuration(d) })}
                     >
                       ×
                     </button>
@@ -248,7 +244,7 @@ export default function ConfigView() {
             <div className="mt-3 flex items-end gap-2">
               <div>
                 <label className={label} htmlFor="new_duration">
-                  New duration (minutes)
+                  {t("cfg.newDuration")}
                 </label>
                 <input
                   id="new_duration"
@@ -269,16 +265,16 @@ export default function ConfigView() {
               <button
                 type="button"
                 onClick={addDuration}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+                className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:bg-brand-dark"
               >
-                Add
+                {t("common.add")}
               </button>
             </div>
           </div>
 
           <div>
             <label className={label} htmlFor="queue_count">
-              Number of machines
+              {t("cfg.machines")}
             </label>
             <div className="mt-1 flex items-center gap-2">
               <input
@@ -293,7 +289,7 @@ export default function ConfigView() {
               />
               {eventStarted && (
                 <span className="whitespace-nowrap rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
-                  Locked (event started)
+                  {t("cfg.machinesLocked")}
                 </span>
               )}
             </div>
@@ -306,9 +302,9 @@ export default function ConfigView() {
             type="button"
             onClick={() => void handleSave()}
             disabled={saving}
-            className="rounded-md bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-md bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? t("common.saving") : t("common.save")}
           </button>
           {saveMsg && <span className="text-sm text-slate-600">{saveMsg}</span>}
         </div>
@@ -316,42 +312,37 @@ export default function ConfigView() {
 
       {/* Start event */}
       <section className={card}>
-        <h2 className="text-lg font-semibold text-slate-900">Start event</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Starting captures each participant's immutable original estimated start time and locks
-          the machine count. This cannot be undone.
-        </p>
+        <h2 className="text-lg font-semibold text-brand">{t("cfg.startTitle")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("cfg.startDesc")}</p>
         <button
           type="button"
           onClick={() => void handleStart()}
           disabled={eventStarted || state.config.event_start_time === null || starting}
           className="mt-4 rounded-xl bg-emerald-600 px-8 py-3 text-base font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {eventStarted ? "Event started" : starting ? "Starting…" : "Start event"}
+          {eventStarted
+            ? t("cfg.startedBtn")
+            : starting
+              ? t("cfg.startingBtn")
+              : t("cfg.startBtn")}
         </button>
         {state.config.event_start_time === null && !eventStarted && (
-          <p className="mt-2 text-sm text-amber-700">
-            Set and save an event start time before starting.
-          </p>
+          <p className="mt-2 text-sm text-amber-700">{t("cfg.needStart")}</p>
         )}
         {startMsg && <p className="mt-2 text-sm text-red-600">{startMsg}</p>}
       </section>
 
       {/* Danger zone: restart event data */}
       <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-red-200">
-        <h2 className="text-lg font-semibold text-red-700">Danger zone</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Restart the event: delete <strong>all participants and results</strong>, restore gift
-          quantities, and un-start the event. Machines, buffer, durations, start time and PINs are
-          kept. Use this to clear test data before the real event. This cannot be undone.
-        </p>
+        <h2 className="text-lg font-semibold text-red-700">{t("cfg.danger")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("cfg.dangerDesc")}</p>
         <button
           type="button"
           onClick={() => void handleReset()}
           disabled={resetting}
           className="mt-4 rounded-xl bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {resetting ? "Resetting…" : "Restart event data"}
+          {resetting ? t("cfg.resetting") : t("cfg.resetBtn")}
         </button>
         {resetMsg && <p className="mt-2 text-sm text-slate-700">{resetMsg}</p>}
       </section>

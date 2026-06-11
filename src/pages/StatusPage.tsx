@@ -1,27 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ApiError, errorMessage, getStatusByEmail } from "../lib/api";
+import { ApiError, getStatusByEmail } from "../lib/api";
 import { computeProjection } from "../lib/queueLogic";
-import { subscribeToChanges } from "../lib/realtime";
-import { formatClock, formatClockIso } from "../lib/format";
+import { formatClock } from "../lib/format";
+import { useT, LangToggle } from "../lib/i18n";
 import type { ParticipantStatus, StatusResult } from "../lib/types";
 
-function statusLabel(status: ParticipantStatus): string {
-  switch (status) {
-    case "finished":
-      return "You've finished — great job!";
-    case "skipped":
-      return "Your slot was skipped.";
-    case "no_show":
-      return "Marked as no-show.";
-    case "checked_in":
-      return "You're checked in — you're up!";
-    default:
-      return "You're in the queue.";
-  }
-}
-
 export default function StatusPage() {
+  const t = useT();
   // The text in the input box.
   const [emailInput, setEmailInput] = useState("");
   // The email we've actually looked up (drives refetch + realtime).
@@ -31,22 +17,29 @@ export default function StatusPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
+  function statusLabel(status: ParticipantStatus): string {
+    return t(`status.s.${status}`);
+  }
+
   // Fetch status for a given email. Used by the form, the manual Refresh
   // button, and the realtime subscription.
-  const fetchStatus = useCallback(async (email: string) => {
-    setLoading(true);
-    setErrorMsg(null);
-    try {
-      const data = await getStatusByEmail(email);
-      setResult(data);
-      setLastUpdated(Date.now());
-    } catch (e) {
-      if (e instanceof ApiError) setErrorMsg(errorMessage(e.code));
-      else setErrorMsg("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchStatus = useCallback(
+    async (email: string) => {
+      setLoading(true);
+      setErrorMsg(null);
+      try {
+        const data = await getStatusByEmail(email);
+        setResult(data);
+        setLastUpdated(Date.now());
+      } catch (e) {
+        if (e instanceof ApiError) setErrorMsg(t(`error.${e.code}`));
+        else setErrorMsg(t("common.wrong"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,14 +53,41 @@ export default function StatusPage() {
     if (submittedEmail) void fetchStatus(submittedEmail);
   }
 
-  // Live updates: only subscribe once an email has been looked up. Re-fetch the
-  // stored email whenever anything changes upstream.
+  // Live updates via POLLING, not realtime. Supabase Free tier caps Realtime at
+  // 200 concurrent connections; with ~1000 signed-up users each holding the
+  // status page open, websocket subscriptions here would be refused past 200.
+  // A 30s poll is plenty: a waiting runner's position only moves when people
+  // ahead of them check in/out, and runs take minutes. We only poll while the
+  // tab is visible (no point hammering the DB for backgrounded phones), and
+  // fetch immediately on regaining focus so a returning user sees fresh data.
+  const POLL_INTERVAL_MS = 30_000;
   useEffect(() => {
     if (!submittedEmail) return;
-    const unsub = subscribeToChanges(() => {
-      void fetchStatus(submittedEmail);
-    });
-    return unsub;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const start = () => {
+      if (timer) return;
+      timer = setInterval(() => void fetchStatus(submittedEmail), POLL_INTERVAL_MS);
+    };
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchStatus(submittedEmail); // refresh immediately on focus
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [submittedEmail, fetchStatus]);
 
   const found = result?.found === true;
@@ -89,13 +109,12 @@ export default function StatusPage() {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto w-full max-w-lg">
+        <div className="mb-4 flex justify-end">
+          <LangToggle />
+        </div>
         <header className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-slate-900">
-            EnergySteps — My status
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Look up your spot in line and your projected check-in time.
-          </p>
+          <h1 className="text-2xl font-bold text-brand">{t("status.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("status.subtitle")}</p>
         </header>
 
         {/* Lookup form */}
@@ -107,7 +126,7 @@ export default function StatusPage() {
             htmlFor="status-email"
             className="block text-sm font-medium text-slate-700"
           >
-            Email
+            {t("status.email.label")}
           </label>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <input
@@ -117,15 +136,15 @@ export default function StatusPage() {
               autoComplete="email"
               value={emailInput}
               onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-xl border-0 px-3 py-2 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-slate-900"
+              placeholder="you@mblife.vn"
+              className="w-full rounded-xl border-0 px-3 py-2 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand"
             />
             <button
               type="submit"
               disabled={loading}
-              className="shrink-0 rounded-xl bg-slate-900 px-4 py-2 font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark disabled:opacity-50"
             >
-              {loading ? "Looking up…" : "Look up"}
+              {loading ? t("status.lookingUp") : t("status.lookup")}
             </button>
           </div>
         </form>
@@ -139,7 +158,7 @@ export default function StatusPage() {
         {/* Not found */}
         {result && !found && !errorMsg && (
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-slate-700 shadow-sm ring-1 ring-slate-200">
-            No sign-up found for that email.
+            {t("status.notFound")}
           </p>
         )}
 
@@ -151,30 +170,26 @@ export default function StatusPage() {
               (projection.isDelayed ? (
                 <div className="rounded-2xl bg-amber-50 p-6 text-center shadow-sm ring-2 ring-amber-400">
                   <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
-                    Running behind
+                    {t("status.behind.tag")}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-amber-900">
-                    Running ~
-                    <span className="text-4xl">{projection.delayMinutes}</span>{" "}
-                    minutes behind
+                    {t("status.behind.headline", { n: projection.delayMinutes })}
                   </p>
                   <p className="mt-2 text-base text-amber-800">
-                    Your new estimated check-in is{" "}
-                    <span className="font-bold">
-                      {formatClock(projection.projectedStartMs)}
-                    </span>
+                    {t("status.behind.newEta", {
+                      time: formatClock(projection.projectedStartMs),
+                    })}
                   </p>
                 </div>
               ) : (
                 <div className="rounded-2xl bg-emerald-50 p-5 text-center shadow-sm ring-1 ring-emerald-200">
                   <p className="text-lg font-semibold text-emerald-800">
-                    On schedule
+                    {t("status.onSchedule")}
                   </p>
                   <p className="mt-1 text-sm text-emerald-700">
-                    Estimated check-in at{" "}
-                    <span className="font-semibold">
-                      {formatClock(projection.projectedStartMs)}
-                    </span>
+                    {t("status.onSchedule.eta", {
+                      time: formatClock(projection.projectedStartMs),
+                    })}
                   </p>
                 </div>
               ))}
@@ -184,7 +199,7 @@ export default function StatusPage() {
               <dl className="space-y-4">
                 <div>
                   <dt className="text-sm font-medium text-slate-500">
-                    Assigned machine
+                    {t("status.assignedMachine")}
                   </dt>
                   <dd className="text-lg font-semibold text-slate-900">
                     {queue.name}
@@ -193,12 +208,12 @@ export default function StatusPage() {
 
                 <div>
                   <dt className="text-sm font-medium text-slate-500">
-                    Original estimated start
+                    {t("status.originalEta")}
                   </dt>
                   <dd className="text-lg font-semibold text-slate-900">
                     {me.original_estimated_start
-                      ? formatClockIso(me.original_estimated_start)
-                      : "Set when the event starts"}
+                      ? formatClock(Date.parse(me.original_estimated_start))
+                      : t("status.setAtStart")}
                   </dd>
                 </div>
 
@@ -206,7 +221,7 @@ export default function StatusPage() {
                   <>
                     <div>
                       <dt className="text-sm font-medium text-slate-500">
-                        Current projected start
+                        {t("status.currentEta")}
                       </dt>
                       <dd className="text-lg font-semibold text-slate-900">
                         {formatClock(projection.projectedStartMs)}
@@ -214,13 +229,13 @@ export default function StatusPage() {
                     </div>
                     <div>
                       <dt className="text-sm font-medium text-slate-500">
-                        Position in line
+                        {t("status.position")}
                       </dt>
                       <dd className="text-lg font-semibold text-slate-900">
                         {projection.livePosition}
                         {projection.livePosition === 1 && (
                           <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                            Up next
+                            {t("status.upNext")}
                           </span>
                         )}
                       </dd>
@@ -229,7 +244,7 @@ export default function StatusPage() {
                 ) : (
                   <div>
                     <dt className="text-sm font-medium text-slate-500">
-                      Status
+                      {t("status.statusLabel")}
                     </dt>
                     <dd className="text-lg font-semibold text-slate-900">
                       {statusLabel(me.status)}
@@ -243,7 +258,7 @@ export default function StatusPage() {
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-400">
                 {lastUpdated !== null
-                  ? `Updated ${formatClock(lastUpdated)}`
+                  ? t("status.updated", { time: formatClock(lastUpdated) })
                   : ""}
               </span>
               <button
@@ -252,15 +267,15 @@ export default function StatusPage() {
                 disabled={loading}
                 className="rounded-xl px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-100 disabled:opacity-50"
               >
-                {loading ? "Refreshing…" : "Refresh"}
+                {loading ? t("status.refreshing") : t("common.refresh")}
               </button>
             </div>
           </div>
         )}
 
         <div className="mt-8 text-center">
-          <Link to="/" className="text-sm text-slate-600 underline hover:text-slate-900">
-            ← Back to sign-up
+          <Link to="/" className="text-sm text-brand underline hover:text-brand-dark">
+            {t("status.back")}
           </Link>
         </div>
       </div>

@@ -1,22 +1,14 @@
-// CSV export of all participants for the event.
+// CSV export of all participants for the event. Encoded UTF-8 with a BOM so
+// Excel renders Vietnamese characters correctly.
 import { useModerator } from "./context";
+import { formatDateTimeNumericIso } from "../lib/format";
+import { useT } from "../lib/i18n";
 import type { Participant } from "../lib/types";
 
 const card = "rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200";
 
-const HEADERS = [
-  "Name",
-  "Department",
-  "Email",
-  "Machine",
-  "Run Duration (seconds)",
-  "Original Estimate",
-  "Actual Start",
-  "Actual Finish",
-  "Distance",
-  "Gift",
-  "Status",
-];
+// UTF-8 byte-order mark — makes Excel open Vietnamese CSV without mojibake.
+const BOM = "﻿";
 
 // CSV-escape a single field: wrap in quotes and double any internal quotes.
 function escapeCsv(value: string): string {
@@ -24,15 +16,31 @@ function escapeCsv(value: string): string {
 }
 
 export default function ExportView() {
+  const t = useT();
   const { state } = useModerator();
 
   if (!state) {
-    return <div className="text-slate-400">Loading…</div>;
+    return <div className="text-slate-400">{t("common.loading")}</div>;
   }
 
   const participants = state.participants;
   const queueName = new Map(state.queues.map((q) => [q.id, q.name]));
   const giftName = new Map(state.gifts.map((g) => [g.id, g.name]));
+
+  const headers = [
+    t("csv.name"),
+    t("csv.domain"),
+    t("csv.email"),
+    t("csv.machine"),
+    t("csv.duration"),
+    t("csv.regTime"),
+    t("csv.originalEst"),
+    t("csv.actualStart"),
+    t("csv.actualFinish"),
+    t("csv.distance"),
+    t("csv.gift"),
+    t("csv.status"),
+  ];
 
   function row(p: Participant): string {
     const fields = [
@@ -41,6 +49,7 @@ export default function ExportView() {
       p.email,
       queueName.get(p.assigned_queue_id) ?? "",
       String(p.run_duration_seconds),
+      formatDateTimeNumericIso(p.created_at),
       p.original_estimated_start ?? "",
       p.actual_start ?? "",
       p.actual_finish ?? "",
@@ -52,9 +61,11 @@ export default function ExportView() {
   }
 
   function download() {
-    const lines = [HEADERS.map(escapeCsv).join(","), ...participants.map(row)];
+    const lines = [headers.map(escapeCsv).join(","), ...participants.map(row)];
     const csv = lines.join("\r\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    // Prepend a UTF-8 BOM (﻿) so Excel detects the encoding correctly and
+    // renders Vietnamese diacritics instead of mojibake.
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -68,21 +79,18 @@ export default function ExportView() {
   return (
     <div className="space-y-6">
       <section className={card}>
-        <h2 className="text-lg font-semibold text-slate-900">Export</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Download all participant records as a CSV file.
-        </p>
+        <h2 className="text-lg font-semibold text-brand">{t("exp.title")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("exp.desc")}</p>
         <p className="mt-3 text-sm text-slate-700">
-          <span className="font-semibold">{participants.length}</span>{" "}
-          {participants.length === 1 ? "participant" : "participants"} will be exported.
+          {t("exp.count", { n: participants.length })}
         </p>
         <button
           type="button"
           onClick={download}
           disabled={participants.length === 0}
-          className="mt-4 rounded-md bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 rounded-md bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Download CSV
+          {t("exp.download")}
         </button>
       </section>
     </div>

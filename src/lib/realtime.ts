@@ -40,10 +40,28 @@ export async function broadcastChanged(): Promise<void> {
 }
 
 // Register a callback fired whenever data changes. Returns an unsubscribe fn.
+//
+// The callback is DEBOUNCED: under a signup burst a client can receive many
+// "changed" events per second, and each one triggers a full re-fetch
+// (getStatusByEmail / moderator_get_state). Firing 1:1 with broadcasts is the
+// real meltdown vector — N signups x M open clients = N*M expensive RPCs. We
+// coalesce to at most one re-fetch per window per client; the trailing fire
+// guarantees the latest state is still fetched.
+const REFETCH_DEBOUNCE_MS = 1500;
+
 export function subscribeToChanges(onChange: () => void): () => void {
   void ensureChannel();
-  listeners.add(onChange);
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const debounced = () => {
+    if (timer) return; // a re-fetch is already scheduled within this window
+    timer = setTimeout(() => {
+      timer = null;
+      onChange();
+    }, REFETCH_DEBOUNCE_MS);
+  };
+  listeners.add(debounced);
   return () => {
-    listeners.delete(onChange);
+    if (timer) clearTimeout(timer);
+    listeners.delete(debounced);
   };
 }

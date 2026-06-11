@@ -1,14 +1,16 @@
-// Gift CRUD for the moderator console: list gifts with remaining/total stock,
-// create new gifts, edit name + quantities, and delete with confirmation.
+// Gift management for the moderator console: a derived "gifts by duration tier"
+// eligibility panel (who gets what / slots left), plus gift CRUD — list gifts
+// with remaining/total stock, create, edit name + quantities, delete.
 import { useState } from "react";
 import { useModerator } from "./context";
 import {
   ApiError,
-  errorMessage,
   moderatorCreateGift,
   moderatorDeleteGift,
   moderatorUpdateGift,
 } from "../lib/api";
+import { useT } from "../lib/i18n";
+import GiftEligibility from "./GiftEligibility";
 import type { Gift } from "../lib/types";
 
 // Parse a string as a non-negative integer; returns null if invalid.
@@ -20,6 +22,7 @@ function parseNonNegInt(value: string): number | null {
 }
 
 export default function GiftsView() {
+  const t = useT();
   const { state, pin, reload } = useModerator();
 
   // Create form.
@@ -39,7 +42,7 @@ export default function GiftsView() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   if (!state) {
-    return <div className="text-slate-400">Loading gifts…</div>;
+    return <div className="text-slate-400">{t("gift.loading")}</div>;
   }
 
   const { gifts } = state;
@@ -48,11 +51,11 @@ export default function GiftsView() {
     const name = newName.trim();
     const qty = parseNonNegInt(newQty);
     if (!name) {
-      setCreateMsg("Gift name is required.");
+      setCreateMsg(t("gift.nameRequired"));
       return;
     }
     if (qty === null) {
-      setCreateMsg("Quantity must be a non-negative whole number.");
+      setCreateMsg(t("gift.qtyInvalid"));
       return;
     }
     setCreating(true);
@@ -63,8 +66,8 @@ export default function GiftsView() {
       setNewName("");
       setNewQty("");
     } catch (e) {
-      if (e instanceof ApiError) setCreateMsg(errorMessage(e.code));
-      else setCreateMsg("Something went wrong. Please try again.");
+      if (e instanceof ApiError) setCreateMsg(t(`error.${e.code}`));
+      else setCreateMsg(t("common.wrong"));
     } finally {
       setCreating(false);
     }
@@ -89,15 +92,15 @@ export default function GiftsView() {
     const total = parseNonNegInt(editTotal);
     const remaining = parseNonNegInt(editRemaining);
     if (!name) {
-      setEditMsg("Gift name is required.");
+      setEditMsg(t("gift.nameRequired"));
       return;
     }
     if (total === null || remaining === null) {
-      setEditMsg("Quantities must be non-negative whole numbers.");
+      setEditMsg(t("gift.qtyNonNeg"));
       return;
     }
     if (remaining > total) {
-      setEditMsg("Remaining quantity cannot exceed the total quantity.");
+      setEditMsg(t("gift.remGtTotal"));
       return;
     }
     setSavingEdit(true);
@@ -111,23 +114,23 @@ export default function GiftsView() {
       await reload();
       setEditing(null);
     } catch (e) {
-      if (e instanceof ApiError) setEditMsg(errorMessage(e.code));
-      else setEditMsg("Something went wrong. Please try again.");
+      if (e instanceof ApiError) setEditMsg(t(`error.${e.code}`));
+      else setEditMsg(t("common.wrong"));
     } finally {
       setSavingEdit(false);
     }
   }
 
   async function remove(g: Gift) {
-    if (!window.confirm(`Delete "${g.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(t("gift.confirmDelete", { name: g.name }))) return;
     setBusyId(g.id);
     try {
       await moderatorDeleteGift(pin, g.id);
       await reload();
       if (editing?.id === g.id) setEditing(null);
     } catch (e) {
-      if (e instanceof ApiError) window.alert(errorMessage(e.code));
-      else window.alert("Something went wrong. Please try again.");
+      if (e instanceof ApiError) window.alert(t(`error.${e.code}`));
+      else window.alert(t("common.wrong"));
     } finally {
       setBusyId(null);
     }
@@ -135,9 +138,12 @@ export default function GiftsView() {
 
   return (
     <div className="space-y-6">
+      {/* Gifts by duration tier (derived, read-only) */}
+      <GiftEligibility />
+
       {/* Create */}
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="text-sm font-semibold text-slate-900">Add a gift</div>
+        <div className="text-sm font-semibold text-slate-900">{t("gift.add")}</div>
         {createMsg && (
           <div className="mt-3 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-200">
             {createMsg}
@@ -145,17 +151,17 @@ export default function GiftsView() {
         )}
         <div className="mt-4 grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Name</span>
+            <span className="text-sm font-medium text-slate-700">{t("gift.name")}</span>
             <input
               type="text"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Water bottle"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none"
+              placeholder={t("gift.namePlaceholder")}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
             />
           </label>
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Quantity</span>
+            <span className="text-sm font-medium text-slate-700">{t("gift.qty")}</span>
             <input
               type="number"
               inputMode="numeric"
@@ -164,15 +170,15 @@ export default function GiftsView() {
               value={newQty}
               onChange={(e) => setNewQty(e.target.value)}
               placeholder="0"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none sm:w-32"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none sm:w-32"
             />
           </label>
           <button
             disabled={creating}
             onClick={() => void create()}
-            className="rounded-xl bg-slate-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+            className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-50"
           >
-            {creating ? "Adding…" : "Add gift"}
+            {creating ? t("gift.adding") : t("gift.addBtn")}
           </button>
         </div>
       </div>
@@ -180,15 +186,15 @@ export default function GiftsView() {
       {/* List */}
       <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         {gifts.length === 0 ? (
-          <p className="p-6 text-sm text-slate-500">No gifts yet.</p>
+          <p className="p-6 text-sm text-slate-500">{t("gift.none")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">Gift</th>
-                  <th className="px-4 py-3">Remaining / Total</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">{t("gift.col.gift")}</th>
+                  <th className="px-4 py-3">{t("gift.col.remaining")}</th>
+                  <th className="px-4 py-3 text-right">{t("gift.col.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -207,14 +213,14 @@ export default function GiftsView() {
                           onClick={() => openEdit(g)}
                           className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
                         >
-                          Edit
+                          {t("common.edit")}
                         </button>
                         <button
                           disabled={busyId === g.id}
                           onClick={() => void remove(g)}
                           className="rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-300 hover:bg-red-50 disabled:opacity-50"
                         >
-                          Delete
+                          {t("common.delete")}
                         </button>
                       </div>
                     </td>
@@ -230,7 +236,7 @@ export default function GiftsView() {
       {editing && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4">
           <div className="mt-12 w-full max-w-lg rounded-2xl bg-white p-6 shadow-lg ring-1 ring-slate-200">
-            <div className="text-lg font-semibold text-slate-900">Edit gift</div>
+            <div className="text-lg font-semibold text-slate-900">{t("gift.editTitle")}</div>
 
             {editMsg && (
               <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 ring-1 ring-red-200">
@@ -240,18 +246,18 @@ export default function GiftsView() {
 
             <div className="mt-4 grid gap-4">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700">Name</span>
+                <span className="text-sm font-medium text-slate-700">{t("gift.name")}</span>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
                 />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
                   <span className="text-sm font-medium text-slate-700">
-                    Total quantity
+                    {t("gift.total")}
                   </span>
                   <input
                     type="number"
@@ -260,12 +266,12 @@ export default function GiftsView() {
                     step={1}
                     value={editTotal}
                     onChange={(e) => setEditTotal(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
                   />
                 </label>
                 <label className="block">
                   <span className="text-sm font-medium text-slate-700">
-                    Remaining quantity
+                    {t("gift.remaining")}
                   </span>
                   <input
                     type="number"
@@ -274,7 +280,7 @@ export default function GiftsView() {
                     step={1}
                     value={editRemaining}
                     onChange={(e) => setEditRemaining(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-slate-900 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
                   />
                 </label>
               </div>
@@ -286,14 +292,14 @@ export default function GiftsView() {
                 onClick={closeEdit}
                 className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 disabled={savingEdit}
                 onClick={() => void saveEdit()}
-                className="rounded-xl bg-slate-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-50"
+                className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-50"
               >
-                {savingEdit ? "Saving…" : "Save changes"}
+                {savingEdit ? t("common.saving") : t("common.save")}
               </button>
             </div>
           </div>

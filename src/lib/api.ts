@@ -13,6 +13,7 @@ import type {
 const KNOWN_CODES: ApiErrorCode[] = [
   "EMAIL_TAKEN",
   "INVALID_DURATION",
+  "INVALID_EMAIL_DOMAIN",
   "INVALID_PIN",
   "INVALID_STATUS",
   "QUEUE_COUNT_LOCKED",
@@ -73,7 +74,12 @@ export async function signUp(input: {
     p_run_duration_seconds: input.run_duration_seconds,
   });
   if (error) throw toApiError(error);
-  await broadcastChanged();
+  // NOTE: intentionally NO broadcastChanged() here. A signup appends the new
+  // runner to the tail of a queue and changes nobody else's position or
+  // estimate, so there is nothing for other clients to re-fetch. Broadcasting
+  // on every signup is the fan-out storm under a 1000-signup burst (every
+  // open status page would re-fetch on every signup). Moderator actions
+  // (check-in/out/skip/config) still broadcast — those genuinely move the queue.
   return data as SignUpResult;
 }
 
