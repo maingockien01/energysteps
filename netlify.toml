@@ -1,0 +1,13 @@
+# Netlify build + SPA routing config.
+# Build command and publish dir for a Vite static SPA.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Single-Page-App redirect: every path falls through to index.html so that
+# client-side routes (/status, /moderator) work on direct load / refresh.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
