@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ApiError, getStatusByEmail } from "../lib/api";
 import { computeProjection } from "../lib/queueLogic";
 import { formatClock } from "../lib/format";
-import { useT, LangToggle } from "../lib/i18n";
+import { useT } from "../lib/i18n";
 import {
   type AlertPermission,
   notificationPermission,
@@ -182,9 +182,6 @@ export default function StatusPage() {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto w-full max-w-lg">
-        <div className="mb-4 flex justify-end">
-          <LangToggle />
-        </div>
         <header className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-brand">{t("status.title")}</h1>
           <p className="mt-1 text-sm text-slate-500">{t("status.subtitle")}</p>

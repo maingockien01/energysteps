@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getLeaderboard } from "../lib/api";
 import { formatDuration } from "../lib/format";
-import { useT, LangToggle } from "../lib/i18n";
+import { useT } from "../lib/i18n";
 import type { LeaderboardEntry, LeaderboardResult } from "../lib/types";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -76,9 +76,6 @@ export default function LeaderboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto w-full max-w-2xl">
-        <div className="mb-4 flex justify-end">
-          <LangToggle />
-        </div>
         <header className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-brand">{t("lb.title")}</h1>
           <p className="mt-1 text-sm text-slate-500">{t("lb.subtitle")}</p>

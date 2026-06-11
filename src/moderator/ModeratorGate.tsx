@@ -3,7 +3,7 @@
 // the DB (verify_pin RPC) — the moderator_pins table is the single source of
 // truth; every other RPC also re-checks the PIN in the DB.
 import { useState } from "react";
-import { useT, LangToggle } from "../lib/i18n";
+import { useT } from "../lib/i18n";
 import { moderatorVerifyPin } from "../lib/api";
 import { getSessionPin, setSessionPin } from "./session";
 
@@ -46,12 +46,9 @@ export default function ModeratorGate({
         onSubmit={(e) => void submit(e)}
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
       >
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-brand">{t("gate.title")}</h1>
-            <p className="mt-1 text-sm text-slate-500">{t("gate.pin")}</p>
-          </div>
-          <LangToggle />
+        <div>
+          <h1 className="text-2xl font-bold text-brand">{t("gate.title")}</h1>
+          <p className="mt-1 text-sm text-slate-500">{t("gate.pin")}</p>
         </div>
         <input
           autoFocus

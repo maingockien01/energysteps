@@ -6,6 +6,7 @@ import { broadcastChanged } from "./realtime";
 import type {
   ActionLogEntry,
   ApiErrorCode,
+  Gift,
   LeaderboardResult,
   ModeratorState,
   SignUpResult,
@@ -18,11 +19,14 @@ const KNOWN_CODES: ApiErrorCode[] = [
   "INVALID_EMAIL_DOMAIN",
   "INVALID_PIN",
   "INVALID_STATUS",
+  "GIFT_ALREADY_AWARDED",
   "QUEUE_COUNT_LOCKED",
   "QUEUE_COUNT_HAS_SIGNUPS",
   "ALREADY_STARTED",
   "NO_START_TIME",
   "UNDO_NOT_APPLICABLE",
+  "QUEUE_NOT_FREE",
+  "NOT_FOUND",
 ];
 
 export class ApiError extends Error {
@@ -44,7 +48,9 @@ function toApiError(error: { message?: string } | null): ApiError {
 export function errorMessage(code: ApiErrorCode): string {
   switch (code) {
     case "EMAIL_TAKEN":
-      return "That email is already signed up. Each email can only register once.";
+      return "That email already has an in-progress registration. You can register again after you finish or are skipped.";
+    case "GIFT_ALREADY_AWARDED":
+      return "This person has already received a gift. Check out with “No gift”.";
     case "INVALID_DURATION":
       return "That run duration is not allowed. Please pick one from the list.";
     case "INVALID_PIN":
@@ -119,6 +125,16 @@ export async function getPublicConfig(): Promise<{
   };
 }
 
+// Gifts are anon-readable (non-sensitive) — the sign-up form reads them to show
+// how many gifts are still waiting for the runner's chosen duration tier.
+export async function getPublicGifts(): Promise<Gift[]> {
+  const { data, error } = await supabase
+    .from("gifts")
+    .select("id,name,total_quantity,remaining_quantity");
+  if (error) throw toApiError(error);
+  return (data ?? []) as Gift[];
+}
+
 // Public leaderboard (P1-5). De-identified to a friendly handle server-side.
 export async function getLeaderboard(): Promise<LeaderboardResult> {
   const { data, error } = await supabase.rpc("get_leaderboard");
@@ -161,6 +177,22 @@ export async function moderatorCheckOut(
     p_participant_id: participantId,
     p_distance: distance,
     p_gift_id: giftId,
+  });
+  if (error) throw toApiError(error);
+  await broadcastChanged();
+}
+
+// Move a waiting (signed_up) runner to a currently-free machine. The RPC
+// enforces that the target queue has no active runner (see migration 0007).
+export async function moderatorMoveParticipant(
+  pin: string,
+  participantId: string,
+  targetQueueId: string,
+) {
+  const { error } = await supabase.rpc("moderator_move_participant", {
+    p_pin: pin,
+    p_participant_id: participantId,
+    p_target_queue_id: targetQueueId,
   });
   if (error) throw toApiError(error);
   await broadcastChanged();

@@ -4,6 +4,11 @@
 -- a 2-min runner), so the individual leaderboard is grouped by the runner's
 -- chosen run_duration_seconds. We expose `duration` on each entry and let the
 -- client group into tiers. Department totals are unchanged (participation view).
+--
+-- Rules: docs/RULES.md §"Achievement awards". KNOWN GAP (deviation B): the
+-- per-level tie-break should be earliest finish time; the order by below ranks
+-- by distance only. To comply, select actual_finish and add `, actual_finish
+-- asc` to the individuals order by.
 -- Run AFTER 0005_improvements.sql. Idempotent.
 -- =============================================================================
 create or replace function public.get_leaderboard()

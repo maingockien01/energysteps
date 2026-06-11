@@ -63,13 +63,13 @@ export function formatDateTimeNumericIso(iso: string | null): string {
   return Number.isNaN(ms) ? "—" : formatDateTimeNumeric(ms);
 }
 
-// A run duration in seconds -> "10 min" / "1 min 30 s".
+// A run duration in seconds -> "10 phút" / "1 phút 30 giây" (Vietnamese-only UI).
 export function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  if (m > 0 && s > 0) return `${m} min ${s} s`;
-  if (m > 0) return `${m} min`;
-  return `${s} s`;
+  if (m > 0 && s > 0) return `${m} phút ${s} giây`;
+  if (m > 0) return `${m} phút`;
+  return `${s} giây`;
 }
 
 // Signed seconds -> "M:SS" countdown clock. Negative clamps to 0:00.

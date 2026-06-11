@@ -1,7 +1,7 @@
 // Moderator console chrome: top nav between the views + the shared provider.
 import { NavLink, Outlet } from "react-router-dom";
 import { ModeratorProvider, useModerator } from "./context";
-import { useT, LangToggle } from "../lib/i18n";
+import { useT } from "../lib/i18n";
 import { clearSessionPin } from "./session";
 
 // `labelKey` is an i18n key; the route paths are kept stable (e.g. /runners) so
@@ -69,7 +69,6 @@ function ModeratorChrome() {
           </div>
           <div className="flex items-center gap-4">
             <StatusBar />
-            <LangToggle />
             <button
               onClick={() => {
                 clearSessionPin();

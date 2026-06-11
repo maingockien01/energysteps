@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ApiError, getPublicConfig, signUp } from "../lib/api";
+import { ApiError, getPublicConfig, getPublicGifts, signUp } from "../lib/api";
 import { formatClockIso, formatDuration } from "../lib/format";
-import { useT, LangToggle } from "../lib/i18n";
+import { useT } from "../lib/i18n";
 import { DOMAINS } from "../lib/domains";
+import { giftTierForSeconds } from "../lib/gifts";
 import {
   type AlertPermission,
   notificationPermission,
   requestNotificationPermission,
 } from "../lib/notify";
 import { unlockAudio } from "../lib/sound";
-import type { SignUpResult } from "../lib/types";
+import type { Gift, SignUpResult } from "../lib/types";
 
 interface PublicConfig {
   allowed_run_durations: number[];
@@ -24,6 +25,7 @@ const MBLIFE_EMAIL_RE = /^[^\s@]+@mblife\.vn$/i;
 export default function SignUpPage() {
   const t = useT();
   const [config, setConfig] = useState<PublicConfig | null>(null);
+  const [gifts, setGifts] = useState<Gift[]>([]);
   const [loadError, setLoadError] = useState(false);
 
   // Form state. `domain` is shown as "Domain / Khối/Phòng" but is still stored
@@ -43,13 +45,17 @@ export default function SignUpPage() {
     let active = true;
     (async () => {
       try {
-        const cfg = await getPublicConfig();
+        const [cfg, giftList] = await Promise.all([
+          getPublicConfig(),
+          getPublicGifts().catch(() => [] as Gift[]), // nudge is optional; don't block sign-up
+        ]);
         if (!active) return;
         setConfig({
           allowed_run_durations: cfg.allowed_run_durations,
           event_start_time: cfg.event_start_time,
           buffer_seconds: cfg.buffer_seconds,
         });
+        setGifts(giftList);
         setDurationSeconds(cfg.allowed_run_durations[0] ?? null);
       } catch {
         if (active) setLoadError(true);
@@ -112,9 +118,6 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10 sm:py-16">
       <div className="mx-auto w-full max-w-md">
-        <div className="mb-4 flex justify-end">
-          <LangToggle />
-        </div>
         <header className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-brand">
             {t("signup.title")}
@@ -127,7 +130,7 @@ export default function SignUpPage() {
         ) : config === null ? (
           <LoadingCard />
         ) : result ? (
-          <ConfirmationCard result={result} onAgain={resetForm} />
+          <ConfirmationCard result={result} gifts={gifts} onAgain={resetForm} />
         ) : (
           <form
             onSubmit={handleSubmit}
@@ -280,9 +283,11 @@ function ErrorCard({ onRetry }: { onRetry: () => void }) {
 
 function ConfirmationCard({
   result,
+  gifts,
   onAgain,
 }: {
   result: SignUpResult;
+  gifts: Gift[];
   onAgain: () => void;
 }) {
   const t = useT();
@@ -293,6 +298,25 @@ function ConfirmationCard({
   async function enableAlerts() {
     unlockAudio(); // gesture: permit later chimes on the status page
     setAlertPerm(await requestNotificationPermission());
+  }
+
+  // "Gifts still waiting" nudge (PM feedback item 12). Remaining = the tier's
+  // gift quota minus everyone who has signed up in that duration tier so far
+  // (this runner included). The quota is the live gift total when configured,
+  // else the documented fallback in GIFT_TIERS. Falls back to a "Top 1" message
+  // once the tier is fully subscribed.
+  const tier = giftTierForSeconds(result.participant.run_duration_seconds);
+  let giftNudge: string | null = null;
+  if (tier && Number.isFinite(result.tier_signup_count)) {
+    const gift = gifts.find(
+      (g) => g.name.trim().toLowerCase() === tier.giftName.trim().toLowerCase(),
+    );
+    const quota = gift?.total_quantity ?? tier.quantity;
+    const remaining = quota - result.tier_signup_count;
+    giftNudge =
+      remaining > 0
+        ? t("confirm.giftRemaining", { n: remaining, gift: tier.giftName })
+        : t("confirm.giftGone");
   }
 
   const start = result.estimated_start;
@@ -332,6 +356,12 @@ function ConfirmationCard({
           <p className="mt-1 text-sm text-slate-500">{t("confirm.noWindow")}</p>
         )}
       </div>
+
+      {giftNudge && (
+        <p className="mt-5 rounded-xl bg-brand/5 px-4 py-3 text-sm font-medium text-brand ring-1 ring-brand/20">
+          {giftNudge}
+        </p>
+      )}
 
       <p className="mt-5 text-sm text-slate-600">
         {t("confirm.statusHint")

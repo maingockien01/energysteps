@@ -36,7 +36,11 @@ const vi: Dict = {
   "common.wrong": "Đã có lỗi xảy ra. Vui lòng thử lại.",
 
   // Error codes (raised by the RPCs)
-  "error.EMAIL_TAKEN": "Email này đã đăng ký. Mỗi email chỉ được đăng ký một lần.",
+  "error.EMAIL_TAKEN": "Email này đang có một lượt đăng ký chưa hoàn thành. Bạn chỉ có thể đăng ký lại sau khi đã chạy xong hoặc bị bỏ lượt.",
+  "error.GIFT_ALREADY_AWARDED": "Người này đã nhận quà rồi. Vui lòng check-out với “Không tặng quà”.",
+  "error.QUEUE_NOT_FREE": "Máy này đang có người — chỉ chuyển được sang máy đang trống.",
+  "error.NOT_FOUND": "Không tìm thấy người tham gia.",
+  "error.INVALID_STATUS": "Chỉ có thể chuyển những Amazer đang chờ (chưa check-in).",
   "error.INVALID_DURATION": "Thời lượng chạy không hợp lệ. Vui lòng chọn trong danh sách.",
   "error.INVALID_PIN": "Mã PIN không đúng.",
   "error.INVALID_EMAIL_DOMAIN": "Email phải kết thúc bằng @mblife.vn.",
@@ -48,11 +52,11 @@ const vi: Dict = {
 
   // Sign-up page
   "signup.title": "ENERGY STEPS",
-  "signup.subtitle": "Giữ chỗ của bạn, chọn thời lượng chạy, và chúng tôi sẽ xếp máy cho bạn.",
+  "signup.subtitle": "Đi để nạp năng lượng, bước để thêm cảm hứng!",
   "signup.name.label": "Họ và tên",
   "signup.name.placeholder": "Tên của bạn",
   "signup.domain.label": "Khối/Phòng",
-  "signup.domain.placeholder": "Chọn khối/phòng…",
+  "signup.domain.placeholder": "Chọn Khối/Phòng…",
   "signup.email.label": "Email",
   "signup.email.placeholder": "ban@mblife.vn",
   "signup.email.mblife": "Email phải kết thúc bằng @mblife.vn.",
@@ -68,7 +72,9 @@ const vi: Dict = {
   // Confirmation
   "confirm.done": "Bạn đã đăng ký thành công!",
   "confirm.machineLabel": "Máy được xếp cho bạn:",
-  "confirm.machineNote": "Máy này là của bạn trong suốt sự kiện — sẽ không thay đổi.",
+  "confirm.machineNote": "Đây là máy của bạn. Ban tổ chức có thể chuyển bạn sang máy trống để hàng chờ nhanh hơn — hãy theo dõi trang trạng thái.",
+  "confirm.giftRemaining": "🎁 Còn {n} phần {gift} đang đợi! Hãy xuống đúng giờ để nhận.",
+  "confirm.giftGone": "🎁 Phần quà cho Top 1 Amazer có thành tích tốt nhất vẫn đang đợi!",
   "confirm.windowLabel": "Khung giờ check-in dự kiến",
   "confirm.noWindow": "Thời gian dự kiến sẽ có sau khi ban tổ chức đặt thời gian bắt đầu — hãy kiểm tra trang trạng thái sau.",
   "confirm.statusHint": "Bạn có thể quay lại bất cứ lúc nào để tra cứu trạng thái bằng email tại {link}.",
@@ -153,12 +159,17 @@ const vi: Dict = {
   "board.slotElapsed": "Hết thời gian — hãy check-out để chuyển lượt.",
   "board.checkOut": "Check-out",
   "board.checkOutTitle": "Check-out {name}",
-  "board.distance": "Quãng đường (không bắt buộc)",
-  "board.gift": "Quà tặng",
+  "board.distance": "Quãng đường (km · bắt buộc)",
+  "board.gift": "Quà tặng (bắt buộc chọn)",
+  "board.giftPlaceholder": "— Chọn quà —",
   "board.noGift": "Không có quà",
+  "board.skipGift": "Không tặng quà cho lượt này",
   "board.giftLeft": "{name} (còn {n})",
+  "board.giftRequired": "Vui lòng chọn quà, hoặc tích “Không tặng quà”.",
+  "board.alreadyAwarded": "Người này (theo email) đã nhận quà rồi — chỉ có thể check-out không kèm quà.",
   "board.confirmCheckout": "Xác nhận check-out",
-  "board.distanceNaN": "Quãng đường phải là số, hoặc để trống.",
+  "board.distanceNaN": "Quãng đường phải là số.",
+  "board.distanceRequired": "Vui lòng nhập quãng đường (km).",
   "board.confirmSkip": "Bạn có chắc muốn {verb} {name} không? Thao tác này chuyển lượt.",
   "board.verb.no_show": "đánh dấu vắng mặt",
   "board.verb.skipped": "bỏ qua",
@@ -311,13 +322,13 @@ const vi: Dict = {
   "status.finished.leaderboard": "Xem bảng xếp hạng →",
 
   // Leaderboard (P1-5)
-  "lb.title": "EnergySteps — Bảng xếp hạng",
-  "lb.subtitle": "Xếp hạng theo quãng đường đã chạy.",
+  "lb.title": "ENERGY STEPS - LEADERBOARD",
+  "lb.subtitle": "Xếp hạng theo quãng đường (km).",
   "lb.individuals": "Cá nhân",
-  "lb.category": "Cự ly {d}",
+  "lb.category": "Mức thử thách {d}",
   "lb.departments": "Theo khối/phòng",
   "lb.finishers": "{n} người hoàn thành",
-  "lb.meters": "{n} m",
+  "lb.meters": "{n} km",
   "lb.empty": "Chưa có ai hoàn thành. Hãy quay lại sau!",
 
   // Config — capacity (P0-2)
@@ -341,7 +352,9 @@ const vi: Dict = {
   "board.idleComplete":
     "{machine} đã xong và đang rảnh trong khi máy khác vẫn còn người chờ.",
   "board.idleHint":
-    "Hãy tìm và check-in người này, hoặc đánh dấu vắng mặt để chuyển lượt — không di chuyển ai sang máy khác.",
+    "Máy đang chạy nhưng chưa check-in: hãy check-in hoặc đánh dấu vắng mặt. Máy đã rảnh: có thể chuyển bớt Amazer đang chờ từ máy khác sang (nút Chuyển máy).",
+  "board.moveTo": "Chuyển máy…",
+  "board.moved": "Đã chuyển {name} sang {machine}.",
   "board.undidCheckInMsg": "Đã check-in {name}.",
   "board.undidCheckOutMsg": "Đã check-out {name}.",
   "board.undo": "Hoàn tác",
@@ -367,6 +380,7 @@ const vi: Dict = {
   "dash.action.no_show": "Vắng mặt",
   "dash.action.undo_check_in": "Hoàn tác check-in",
   "dash.action.undo_check_out": "Hoàn tác check-out",
+  "dash.action.move": "Chuyển máy",
 };
 
 const en: Dict = {
@@ -384,7 +398,8 @@ const en: Dict = {
   "common.add": "Add",
   "common.wrong": "Something went wrong. Please try again.",
 
-  "error.EMAIL_TAKEN": "That email is already signed up. Each email can only register once.",
+  "error.EMAIL_TAKEN": "That email already has an in-progress registration. You can register again after you finish or are skipped.",
+  "error.GIFT_ALREADY_AWARDED": "This person has already received a gift. Check out with “No gift”.",
   "error.INVALID_DURATION": "That run duration is not allowed. Please pick one from the list.",
   "error.INVALID_PIN": "Incorrect PIN.",
   "error.INVALID_EMAIL_DOMAIN": "Email must end with @mblife.vn.",
@@ -393,6 +408,9 @@ const en: Dict = {
   "error.ALREADY_STARTED": "The event has already been started.",
   "error.NO_START_TIME": "Set an event start time before starting the event.",
   "error.UNKNOWN": "Something went wrong. Please try again.",
+  "error.QUEUE_NOT_FREE": "That machine already has someone — runners can only move to a free machine.",
+  "error.NOT_FOUND": "Participant not found.",
+  "error.INVALID_STATUS": "Only waiting runners (not yet checked in) can be moved.",
 
   "signup.title": "ENERGY STEPS",
   "signup.subtitle": "Reserve your spot, pick a run length, and we’ll assign you a machine.",
@@ -414,7 +432,9 @@ const en: Dict = {
 
   "confirm.done": "You’re signed up!",
   "confirm.machineLabel": "Your assigned machine:",
-  "confirm.machineNote": "This machine is yours for the event — it won’t change.",
+  "confirm.machineNote": "This is your machine. Organizers may move you to a free machine to keep the queue moving — keep an eye on the status page.",
+  "confirm.giftRemaining": "🎁 {n} {gift} still waiting! Come down on time to claim one.",
+  "confirm.giftGone": "🎁 The gift for the Top 1 best-performing Amazer is still waiting!",
   "confirm.windowLabel": "Estimated check-in window",
   "confirm.noWindow": "Your estimated time will be available once the organizer sets the event start time — check the status page later.",
   "confirm.statusHint": "You can return anytime to look up your status by email on the {link}.",
@@ -494,10 +514,14 @@ const en: Dict = {
   "board.slotElapsed": "Slot time elapsed — check them out to advance the queue.",
   "board.checkOut": "Check out",
   "board.checkOutTitle": "Check out {name}",
-  "board.distance": "Distance logged (optional)",
-  "board.gift": "Gift",
+  "board.distance": "Distance logged (km · required)",
+  "board.gift": "Gift (selection required)",
+  "board.giftPlaceholder": "— Select a gift —",
   "board.noGift": "No gift",
+  "board.skipGift": "No gift for this run",
   "board.giftLeft": "{name} ({n} left)",
+  "board.giftRequired": "Pick a gift, or tick “No gift”.",
+  "board.alreadyAwarded": "This person (by email) has already received a gift — they can only be checked out without one.",
   "board.confirmCheckout": "Confirm check-out",
   "board.distanceNaN": "Distance must be a number, or leave it blank.",
   "board.confirmSkip": "Are you sure you want to {verb} {name}? This advances the queue.",
@@ -666,7 +690,9 @@ const en: Dict = {
   "board.idleComplete":
     "{machine} is finished and idle while other machines still have runners waiting.",
   "board.idleHint":
-    "Find and check this runner in, or mark no-show to advance — don't move anyone between machines.",
+    "Machine running but not checked in: check them in or mark no-show. Idle machine: move a waiting runner over from another machine (Move button).",
+  "board.moveTo": "Move to…",
+  "board.moved": "Moved {name} to {machine}.",
   "board.undidCheckInMsg": "Checked in {name}.",
   "board.undidCheckOutMsg": "Checked out {name}.",
   "board.undo": "Undo",
@@ -691,6 +717,7 @@ const en: Dict = {
   "dash.action.no_show": "No-show",
   "dash.action.undo_check_in": "Undid check-in",
   "dash.action.undo_check_out": "Undid check-out",
+  "dash.action.move": "Moved machine",
 };
 
 const DICTS: Record<Lang, Dict> = { vi, en };

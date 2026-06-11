@@ -1,5 +1,6 @@
-// Gift-by-duration-tier rules (spec B.5). Each run-duration tier awards a
-// specific gift to the first N *finishers* in that tier, ranked by finish time.
+// Gift-by-duration-tier rules (spec B.5; official rules in docs/RULES.md §"Gift
+// structure"). Each run-duration tier awards a specific gift to the first N
+// *finishers* in that tier, ranked by finish time.
 // The gift's live quantity is read from the DB by matching `giftName`; if no
 // such gift row exists, `quantity` here is the expected fallback total.
 //
@@ -15,3 +16,8 @@ export const GIFT_TIERS: readonly GiftTier[] = [
   { seconds: 180, giftName: "Nước ép", quantity: 30 }, // 3 min
   { seconds: 300, giftName: "Set hoa quả", quantity: 20 }, // 5 min
 ];
+
+// The gift tier for a given run duration (seconds), or undefined if none.
+export function giftTierForSeconds(seconds: number): GiftTier | undefined {
+  return GIFT_TIERS.find((t) => t.seconds === seconds);
+}

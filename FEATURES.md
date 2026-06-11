@@ -8,8 +8,11 @@ Plain-English description of every feature and the rules behind it.
 
 - Anyone can sign up with **name, department, email, and a run duration** chosen
   from the organizer-configured list.
-- **Email is unique.** If an email has already signed up, the form rejects it
-  with a friendly message — one registration per email.
+- **One active registration per email.** An email can register and run **more
+  than once**, but only once its previous attempt is finished/skipped/no-show.
+  While a run is still pending, signing up again with the same email is rejected
+  with a friendly message. (Gifts are still limited to **once per email** — see
+  Gifts and the check-out rule below.)
 - On submit, the system **permanently assigns** the runner to the queue (machine)
   with the **shortest total wait time** and appends them to the end of it. Wait
   time of a queue = the sum of `(run duration + buffer)` for everyone in that
@@ -62,9 +65,15 @@ Access requires a PIN (see RELEASE.md step 5). The console has five tabs:
     driven** and never resets, regardless of when (or whether) a check-in happens.
 - **Check in** sets the runner to *running* and **auto-stamps the start time**
   (the moderator never types a time).
-- **Check out** prompts only for **distance** and an optional **gift**, then
+- **Check out** prompts for **distance** (required) and a **gift decision**, then
   **auto-stamps the finish time**, decrements the chosen gift's remaining count,
   and advances the queue so the next runner's slot timer starts.
+  - The gift is **not optional-by-default**: the moderator must either pick a
+    gift or explicitly tick **"No gift"**. The Confirm button refuses to proceed
+    until one of the two is chosen, so a gift is never skipped by accident.
+  - **One gift per email.** If any other run by the same email already received
+    a gift, the gift picker is locked to "No gift" (with a notice) and the
+    server rejects a second gift (`GIFT_ALREADY_AWARDED`).
 
 ### 2. Skip / no-show
 - On the board, the head runner can be marked **No-show** or **Skipped**. This
@@ -76,7 +85,8 @@ Access requires a PIN (see RELEASE.md step 5). The console has five tabs:
 - A searchable list of all sign-ups (search by email or name). Shows name,
   department, email, machine, duration, status.
 - A moderator can **edit** a runner's name, department, email, and run duration.
-  Email uniqueness is re-checked.
+  The edit is rejected only if the new email clashes with another **active**
+  registration (finished/skipped runs don't block it).
 - **Moving a runner to a different machine is not possible** and is intentionally
   not offered in the UI — the machine is shown read-only.
 

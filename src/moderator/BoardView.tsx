@@ -9,6 +9,7 @@ import {
   ApiError,
   moderatorCheckIn,
   moderatorCheckOut,
+  moderatorMoveParticipant,
   moderatorSkip,
   moderatorUndoCheckIn,
   moderatorUndoCheckOut,
@@ -60,6 +61,9 @@ export default function BoardView() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [distanceInput, setDistanceInput] = useState("");
   const [giftInput, setGiftInput] = useState("");
+  // Gift is a required decision at check-out: the moderator must either pick a
+  // gift OR explicitly tick "no gift". `skipGift` is that explicit opt-out.
+  const [skipGift, setSkipGift] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
   const [station, setStation] = useState<string | null>(() => {
@@ -143,6 +147,12 @@ export default function BoardView() {
   const upcoming = activeList.slice(1);
   const doneList = queueParticipants.filter((p) => DONE.has(p.status));
 
+  // Free machines = queues with no active (signed_up / checked_in) runner. A
+  // waiting runner can be moved onto one of these to rebalance load (PM item 14).
+  const freeQueues = queues.filter(
+    (q) => !(byQueue.get(q.id) ?? []).some((p) => !DONE.has(p.status)),
+  );
+
   async function run(fn: () => Promise<void>): Promise<boolean> {
     setBusy(true);
     setMsg(null);
@@ -170,6 +180,9 @@ export default function BoardView() {
   function openCheckout() {
     setDistanceInput("");
     setGiftInput("");
+    // If this email already received a gift, pre-set the explicit opt-out so the
+    // moderator can only check out without one.
+    setSkipGift(alreadyAwarded);
     setCheckoutOpen(true);
   }
 
@@ -177,12 +190,21 @@ export default function BoardView() {
     if (!head) return;
     const h = head;
     const trimmed = distanceInput.trim();
-    const distance = trimmed === "" ? null : Number(trimmed);
-    if (distance !== null && Number.isNaN(distance)) {
+    if (trimmed === "") {
+      setMsg(t("board.distanceRequired"));
+      return;
+    }
+    const distance = Number(trimmed);
+    if (Number.isNaN(distance)) {
       setMsg(t("board.distanceNaN"));
       return;
     }
-    const giftId = giftInput === "" ? null : giftInput;
+    // Gift is a required decision: a gift must be selected, or "no gift" ticked.
+    if (!skipGift && giftInput === "") {
+      setMsg(t("board.giftRequired"));
+      return;
+    }
+    const giftId = skipGift ? null : giftInput;
     setCheckoutOpen(false);
     void run(() => moderatorCheckOut(pin, h.id, distance, giftId)).then((ok) => {
       if (ok) setLastAction({ id: h.id, kind: "check_out", name: h.name, at: Date.now() });
@@ -197,6 +219,38 @@ export default function BoardView() {
       kind === "check_in"
         ? moderatorUndoCheckIn(pin, id)
         : moderatorUndoCheckOut(pin, id),
+    );
+  }
+
+  function onMove(p: Participant, targetQueueId: string) {
+    const target = queues.find((q) => q.id === targetQueueId);
+    setLastAction(null); // a move isn't undoable from the bar
+    void run(() => moderatorMoveParticipant(pin, p.id, targetQueueId)).then((ok) => {
+      if (ok && target) setMsg(t("board.moved", { name: p.name, machine: target.name }));
+    });
+  }
+
+  // Move control: shown only for waiting (signed_up) runners when at least one
+  // machine is currently free. Picking a machine moves the runner there.
+  function renderMove(p: Participant) {
+    if (p.status !== "signed_up" || freeQueues.length === 0) return null;
+    return (
+      <select
+        disabled={busy}
+        value=""
+        onChange={(e) => {
+          if (e.target.value) onMove(p, e.target.value);
+        }}
+        aria-label={t("board.moveTo")}
+        className="rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-600 focus:border-brand focus:outline-none disabled:opacity-50"
+      >
+        <option value="">{t("board.moveTo")}</option>
+        {freeQueues.map((q) => (
+          <option key={q.id} value={q.id}>
+            {q.name}
+          </option>
+        ))}
+      </select>
     );
   }
 
@@ -227,6 +281,18 @@ export default function BoardView() {
   const showRun = autoRunning || timer.phase === "running";
 
   const availableGifts = gifts.filter((g) => g.remaining_quantity > 0);
+
+  // One gift per email (across ALL their participations): has any OTHER
+  // registration for this runner's email already received a gift?
+  const headEmail = head?.email.trim().toLowerCase();
+  const alreadyAwarded =
+    !!headEmail &&
+    state.participants.some(
+      (p) =>
+        p.id !== head?.id &&
+        p.gift_id !== null &&
+        p.email.trim().toLowerCase() === headEmail,
+    );
 
   // Layer-1 "Call next" cue: the runners who should physically head to this
   // machine now. While awaiting a check-in that's the head + on-deck; while a
@@ -455,6 +521,7 @@ export default function BoardView() {
               >
                 {t("board.skip")}
               </button>
+              {renderMove(head)}
             </div>
           </div>
         )}
@@ -538,7 +605,7 @@ export default function BoardView() {
                 inputMode="decimal"
                 value={distanceInput}
                 onChange={(e) => setDistanceInput(e.target.value)}
-                placeholder="e.g. 1500"
+                placeholder="vd: 2.5"
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
               />
             </label>
@@ -546,18 +613,43 @@ export default function BoardView() {
               <span className="text-sm font-medium text-slate-700">{t("board.gift")}</span>
               <select
                 value={giftInput}
-                onChange={(e) => setGiftInput(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
+                disabled={skipGift}
+                onChange={(e) => {
+                  setGiftInput(e.target.value);
+                  if (e.target.value !== "") setSkipGift(false);
+                }}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none disabled:bg-slate-100 disabled:text-slate-400"
               >
-                <option value="">{t("board.noGift")}</option>
+                <option value="" disabled>
+                  {t("board.giftPlaceholder")}
+                </option>
                 {availableGifts.map((g) => (
                   <option key={g.id} value={g.id}>
                     {t("board.giftLeft", { name: g.name, n: g.remaining_quantity })}
                   </option>
                 ))}
               </select>
+              <label className="mt-2 flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={skipGift}
+                  disabled={alreadyAwarded}
+                  onChange={(e) => {
+                    setSkipGift(e.target.checked);
+                    if (e.target.checked) setGiftInput("");
+                  }}
+                  className="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand"
+                />
+                {t("board.skipGift")}
+              </label>
             </label>
           </div>
+
+          {alreadyAwarded && (
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
+              {t("board.alreadyAwarded")}
+            </p>
+          )}
           <div className="mt-5 flex flex-wrap gap-3">
             <button
               disabled={busy}
@@ -597,13 +689,16 @@ export default function BoardView() {
                     </div>
                   </div>
                 </div>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusPillClass(
-                    p.status,
-                  )}`}
-                >
-                  {t(`st.${p.status}`)}
-                </span>
+                <div className="flex items-center gap-2">
+                  {renderMove(p)}
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusPillClass(
+                      p.status,
+                    )}`}
+                  >
+                    {t(`st.${p.status}`)}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

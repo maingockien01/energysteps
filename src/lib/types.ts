@@ -77,6 +77,9 @@ export interface SignUpResult {
   event_start_time: string | null;
   buffer_seconds: number;
   waitlisted: boolean; // P0-2
+  // Number of sign-ups in this runner's duration tier, INCLUDING this one — used
+  // to compute the "gifts still waiting" nudge on the confirmation screen.
+  tier_signup_count: number;
 }
 
 export interface StatusResult {
@@ -130,9 +133,12 @@ export type ApiErrorCode =
   | "INVALID_EMAIL_DOMAIN"
   | "INVALID_PIN"
   | "INVALID_STATUS"
+  | "GIFT_ALREADY_AWARDED"
   | "QUEUE_COUNT_LOCKED"
   | "QUEUE_COUNT_HAS_SIGNUPS"
   | "ALREADY_STARTED"
   | "NO_START_TIME"
   | "UNDO_NOT_APPLICABLE"
+  | "QUEUE_NOT_FREE"
+  | "NOT_FOUND"
   | "UNKNOWN";
