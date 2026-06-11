@@ -6,6 +6,7 @@ import LeaderboardPage from "./pages/LeaderboardPage";
 import ModeratorGate from "./moderator/ModeratorGate";
 import ModeratorLayout from "./moderator/ModeratorLayout";
 import BoardView from "./moderator/BoardView";
+import GuideView from "./moderator/GuideView";
 import DashboardView from "./moderator/DashboardView";
 import RunnersView from "./moderator/RunnersView";
 import GiftsView from "./moderator/GiftsView";
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="gifts" element={<GiftsView />} />
         <Route path="config" element={<ConfigView />} />
         <Route path="export" element={<ExportView />} />
+        <Route path="guide" element={<GuideView />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

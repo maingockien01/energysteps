@@ -69,6 +69,19 @@ function ModeratorChrome() {
           </div>
           <div className="flex items-center gap-4">
             <StatusBar />
+            <NavLink
+              to="/moderator/guide"
+              className={({ isActive }) =>
+                `rounded-full px-3 py-1 text-sm font-medium ring-1 transition ${
+                  isActive
+                    ? "bg-brand text-white ring-brand"
+                    : "text-brand ring-brand/40 hover:bg-brand/10"
+                }`
+              }
+              title={t("mod.tab.guide")}
+            >
+              ❓ {t("mod.tab.guide")}
+            </NavLink>
             <button
               onClick={() => {
                 clearSessionPin();
