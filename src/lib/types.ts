@@ -70,7 +70,8 @@ export interface SignUpResult {
 
 export interface StatusResult {
   found: boolean;
-  me?: Participant;
+  // De-identified: the matched runner's OWN status fields only (no name/email).
+  me?: QueueMember;
   queue?: Queue;
   config?: EventConfig;
   queue_members?: QueueMember[];

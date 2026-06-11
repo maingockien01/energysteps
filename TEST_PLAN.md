@@ -142,7 +142,17 @@ against a live Supabase project (see RELEASE.md) with the dev server
     *Expected:* an **empty array `[]`** or a permission error — **never** a list
     of participants with their emails. (The table has no anon read policy; all
     legitimate reads go through the security-definer functions.)
-27. Also confirm the moderator console still works (it reads via the PIN-gated
+27. Confirm the **status lookup leaks no identity**. With a known email, call the
+    public lookup RPC directly (no PIN):
+    ```bash
+    curl "https://<PROJECT>.supabase.co/rest/v1/rpc/get_status_by_email" \
+      -H "apikey: <ANON_KEY>" -H "Authorization: Bearer <ANON_KEY>" \
+      -H "Content-Type: application/json" -d '{"p_email":"alice@x.com"}'
+    ```
+    *Expected:* JSON with `found: true`, a de-identified `me` (position, estimate,
+    status, run duration), the queue, config, and queue_members — but **no
+    `name`, `department`, or `email`** anywhere in the response.
+28. Confirm the moderator console still works (it reads via the PIN-gated
     function, not the table) — the Board shows full names. And confirm an
     **invalid PIN** is rejected at `/moderator` (try `0000`).
 

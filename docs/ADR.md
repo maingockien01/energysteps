@@ -37,6 +37,8 @@ In Supabase these are mutually exclusive: a moderator's browser uses the **same 
 
 **Reversible?** Moderate cost — it shapes the data layer. Flagged for explicit human review.
 
+**Update:** see ADR-006 — the public status-lookup RPC was further tightened to return no PII.
+
 ---
 
 ## ADR-003 — Sign-up and queue assignment happen server-side (in the `sign_up` RPC)
@@ -66,3 +68,15 @@ In Supabase these are mutually exclusive: a moderator's browser uses the **same 
 **Why:** `assigned_queue_id` is permanent at sign-up (spec). Re-generating queues after people are assigned would orphan their assignments and violate that invariant. Blocking the change protects the invariant. The operator must set the machine count before opening sign-ups.
 
 **Reversible?** Yes.
+
+---
+
+## ADR-006 — `get_status_by_email` returns de-identified data only
+
+**Context:** `get_status_by_email` is callable with the public anon key and no PIN (the status page needs it). It originally returned the full matched participant row, so anyone with a known/guessed email could retrieve that person's name and department — a per-email identity-harvest vector (the anon key is public; corporate emails are guessable).
+
+**Decision:** The RPC now returns ONLY de-identified status fields for the matched runner (`id`, `position_in_queue`, `run_duration_seconds`, `status`, `original_estimated_start`, `actual_start`, `actual_finish`) — never `name`, `department`, or `email`. The status page already displays only machine/estimate/position/status, so no UI change was needed. A known-email probe can still confirm a sign-up exists and see its position/estimate/status (inherent to a no-login lookup feature) but harvests no personal identity.
+
+**Why not require a PIN here too:** that would break the spec's public, no-auth status-lookup feature.
+
+**Reversible?** Yes (single RPC).

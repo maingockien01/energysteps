@@ -220,10 +220,13 @@ $$;
 
 -- ---------------------------------------------------------------------------
 -- PUBLIC RPC: get_status_by_email
--- Returns the caller's own participant record, their queue, the event config,
--- and a DE-IDENTIFIED snapshot of everyone in their queue (positions, run
--- durations, statuses, timestamps — NO names/emails) so the client can compute
--- live position + projection without exposing other people's PII.
+-- Callable with the anon key and NO PIN (the public status page needs it), so
+-- it returns ONLY de-identified status data — NEVER name/department/email, not
+-- even for the matched row. A known-email probe can confirm a sign-up exists and
+-- see its position/estimate/status, but harvests no personal identity. Returns:
+-- the caller's own status fields (no PII), their queue, the event config, and a
+-- de-identified snapshot of everyone in their queue, so the client can compute
+-- live position + projection.
 -- ---------------------------------------------------------------------------
 create or replace function public.get_status_by_email(p_email text)
 returns jsonb
@@ -263,7 +266,16 @@ begin
 
   return jsonb_build_object(
     'found', true,
-    'me', to_jsonb(v_me),
+    -- de-identified self (NO name/department/email echoed back)
+    'me', jsonb_build_object(
+            'id', v_me.id,
+            'position_in_queue', v_me.position_in_queue,
+            'run_duration_seconds', v_me.run_duration_seconds,
+            'status', v_me.status,
+            'original_estimated_start', v_me.original_estimated_start,
+            'actual_start', v_me.actual_start,
+            'actual_finish', v_me.actual_finish
+          ),
     'queue', to_jsonb(v_queue),
     'config', to_jsonb(v_cfg),
     'queue_members', v_members

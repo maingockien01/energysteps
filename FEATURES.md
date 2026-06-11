@@ -119,9 +119,12 @@ anyone to a different machine.
 
 ## Security model (short version)
 
-Participant emails are **never** readable by an anonymous web client. The
-`participants` table is locked; the public can only sign up and look up their own
-status (by email) through controlled database functions that return either their
-own row or a de-identified queue snapshot. Moderator actions are authorized by a
-PIN checked **inside the database** on every call. See `docs/ADR.md` for the full
-rationale.
+Participant emails and names are **never** readable by an anonymous web client.
+The `participants` table is locked (no anonymous access at all); the public can
+only sign up and look up status by email through controlled database functions.
+The status-lookup function returns **only de-identified fields** (position,
+estimate, status) — it never echoes back anyone's name, department, or email,
+even for the matched record. There is no path for the anon key to read the
+participant list or harvest identities. Moderator actions are authorized by a PIN
+checked **inside the database** on every call. See `docs/ADR.md` (ADR-002,
+ADR-006) for the full rationale.
