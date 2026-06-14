@@ -305,23 +305,37 @@ function ConfirmationCard({
     setAlertPerm(await requestNotificationPermission());
   }
 
-  // "Gifts still waiting" nudge (PM feedback item 12). The gift for this run is
-  // whichever gift is mapped to the runner's duration tier (gifts.duration_seconds
-  // — the single source of truth, same mapping the check-out auto-suggest uses).
-  // Remaining = that gift's quota minus everyone who has signed up in the tier so
-  // far (this runner included); falls back to a "Top 1" message once fully
-  // subscribed. NOTE: the count is sign-ups (not finishers), so it is an
-  // intentionally rough nudge.
+  // Gift message on the confirmation screen — always present, one of three cases
+  // (PM feedback item 12). The gift for this run is whichever gift is mapped to
+  // the runner's duration tier (gifts.duration_seconds — the single source of
+  // truth, same mapping the check-out auto-suggest uses). The sign-up count is an
+  // intentionally rough proxy (sign-ups, not finishers).
+  //
+  //   1. Tier gift mapped, in stock, AND a slot is still expected for this runner
+  //      → show the real remaining count.
+  //   2. Tier gift exhausted by earlier sign-ups, out of stock, or none mapped
+  //      → motivational message (don't promise a gift we can't deliver).
+  //   3. This email already received its one gift on a prior run
+  //      → motivational message (one gift per person, ever).
   const tierGift = gifts.find(
     (g) => g.duration_seconds === result.participant.run_duration_seconds,
   );
-  let giftNudge: string | null = null;
-  if (tierGift && Number.isFinite(result.tier_signup_count)) {
-    const remaining = tierGift.total_quantity - result.tier_signup_count;
-    giftNudge =
-      remaining > 0
-        ? t("confirm.giftRemaining", { n: remaining, gift: tierGift.name })
-        : t("confirm.giftGone");
+  // remaining = quota minus everyone signed up in the tier so far (this runner
+  // included), capped by live stock so we never over-promise.
+  const expectedRemaining =
+    tierGift && Number.isFinite(result.tier_signup_count)
+      ? Math.min(
+          tierGift.total_quantity - result.tier_signup_count,
+          tierGift.remaining_quantity,
+        )
+      : 0;
+  let giftNudge: string;
+  if (result.already_awarded === true) {
+    giftNudge = t("confirm.giftAlready"); // case 3
+  } else if (tierGift && tierGift.remaining_quantity > 0 && expectedRemaining > 0) {
+    giftNudge = t("confirm.giftRemaining", { n: expectedRemaining, gift: tierGift.name }); // case 1
+  } else {
+    giftNudge = t("confirm.giftGone"); // case 2 (incl. no tier gift configured)
   }
 
   const start = result.estimated_start;

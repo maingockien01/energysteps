@@ -83,6 +83,10 @@ export interface SignUpResult {
   // Number of sign-ups in this runner's duration tier, INCLUDING this one — used
   // to compute the "gifts still waiting" nudge on the confirmation screen.
   tier_signup_count: number;
+  // True if this email has ALREADY received a gift on a prior participation
+  // (one gift per person, ever). Drives the confirmation gift message. Absent on
+  // deployments before migration 0015 — treat a missing value as false.
+  already_awarded?: boolean;
 }
 
 // One past/current participation for an email, returned by get_status_by_email
