@@ -10,8 +10,12 @@ import type { Participant } from "../lib/types";
 const BOM = "﻿";
 
 // CSV-escape a single field: wrap in quotes and double any internal quotes.
+// Also neutralize spreadsheet formula injection — a value starting with =, +,
+// -, @, tab or CR can be executed as a formula when Excel/Sheets opens the file
+// (name/department/email are free text). Prefix those with a single quote.
 function escapeCsv(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${safe.replace(/"/g, '""')}"`;
 }
 
 export default function ExportView() {

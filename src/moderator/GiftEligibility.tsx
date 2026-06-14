@@ -1,39 +1,43 @@
-// Derived "gifts by duration tier" panel (spec B.5). Read-only: for each tier
-// (2/3/5 min) it ranks the FINISHERS of that tier by finish time and marks the
-// first N as gift recipients, where N is the matching gift's total quantity.
-// It does NOT write anything — the actual gift hand-out stays manual at
-// check-out. "Completion" = status 'finished' (with an actual_finish time).
+// Derived "gifts by duration tier" panel (spec B.5). Read-only: for each gift
+// mapped to a run-duration tier (gifts.duration_seconds — the single source of
+// truth since migration 0012, also used by the check-out auto-suggest) it ranks
+// the FINISHERS of that tier by finish time and marks the first N as recipients,
+// where N is that gift's total quantity. It does NOT write anything — the actual
+// gift hand-out stays manual at check-out. "Completion" = status 'finished'
+// (with an actual_finish time).
 import { useModerator } from "./context";
 import { formatDateTimeNumericIso, formatDuration } from "../lib/format";
-import { GIFT_TIERS } from "../lib/gifts";
 import { useT } from "../lib/i18n";
-import type { Participant } from "../lib/types";
+import type { Gift, Participant } from "../lib/types";
 
 export default function GiftEligibility() {
   const t = useT();
   const { state } = useModerator();
   if (!state) return null;
 
-  // Match a tier's gift by name (case-insensitive) to read its live total.
-  const giftByName = new Map(
-    state.gifts.map((g) => [g.name.trim().toLowerCase(), g]),
-  );
+  // One card per gift that is mapped to a duration tier, ordered by tier length.
+  const tierGifts: Gift[] = state.gifts
+    .filter((g) => g.duration_seconds !== null)
+    .sort((a, b) => (a.duration_seconds as number) - (b.duration_seconds as number));
 
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="text-lg font-semibold text-brand">{t("elig.title")}</h2>
       <p className="mt-1 text-sm text-slate-600">{t("elig.subtitle", { n: "N" })}</p>
 
+      {tierGifts.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-500">{t("elig.noTiers")}</p>
+      ) : (
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
-        {GIFT_TIERS.map((tier) => {
-          const gift = giftByName.get(tier.giftName.trim().toLowerCase());
-          const total = gift?.total_quantity ?? tier.quantity;
+        {tierGifts.map((gift) => {
+          const seconds = gift.duration_seconds as number;
+          const total = gift.total_quantity;
 
           // Finishers in this tier, ranked by finish time (earliest first).
           const finishers: Participant[] = state.participants
             .filter(
               (p) =>
-                p.run_duration_seconds === tier.seconds &&
+                p.run_duration_seconds === seconds &&
                 p.status === "finished" &&
                 p.actual_finish !== null,
             )
@@ -48,27 +52,21 @@ export default function GiftEligibility() {
 
           return (
             <div
-              key={tier.seconds}
+              key={gift.id}
               className="rounded-xl border border-slate-200 p-4"
             >
               <div className="flex items-baseline justify-between">
                 <div className="text-sm font-semibold text-slate-900">
-                  {t("elig.tier", { d: formatDuration(tier.seconds) })}
+                  {t("elig.tier", { d: formatDuration(seconds) })}
                 </div>
                 <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-semibold text-brand">
-                  {t("elig.giftFor", { gift: tier.giftName })}
+                  {t("elig.giftFor", { gift: gift.name })}
                 </span>
               </div>
 
               <div className="mt-1 text-xs text-slate-500">
                 {t("elig.slots", { taken: awarded, total, left })}
               </div>
-
-              {!gift && (
-                <div className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                  {t("elig.noTierGift", { gift: tier.giftName })}
-                </div>
-              )}
 
               {finishers.length === 0 ? (
                 <p className="mt-3 text-sm text-slate-500">
@@ -115,6 +113,7 @@ export default function GiftEligibility() {
           );
         })}
       </div>
+      )}
     </section>
   );
 }

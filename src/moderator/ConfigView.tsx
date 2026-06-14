@@ -93,10 +93,11 @@ export default function ConfigView() {
       await moderatorUpdateConfig(pin, {
         event_start_time: fromDatetimeLocal(startLocal),
         event_end_time: fromDatetimeLocal(endLocal),
-        buffer_seconds: bufferSeconds,
+        // Clamp to >= 0: a negative buffer/grace would corrupt the slot timer.
+        buffer_seconds: Math.max(0, Math.round(bufferSeconds)),
         allowed_run_durations: durations,
         queue_count: queueCount,
-        move_grace_seconds: moveGraceSeconds,
+        move_grace_seconds: Math.max(0, Math.round(moveGraceSeconds)),
       });
       setSaveMsg(t("common.saved"));
       await reload();

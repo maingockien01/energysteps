@@ -38,6 +38,8 @@ const vi: Dict = {
   // Error codes (raised by the RPCs)
   "error.EMAIL_TAKEN": "Email này đang có một lượt đăng ký chưa hoàn thành. Bạn chỉ có thể đăng ký lại sau khi đã chạy xong hoặc bị bỏ lượt.",
   "error.GIFT_ALREADY_AWARDED": "Người này đã nhận quà rồi. Vui lòng check-out với “Không tặng quà”.",
+  "error.GIFT_OUT_OF_STOCK": "Phần quà này đã hết. Vui lòng chọn quà khác, hoặc check-out với “Không tặng quà”.",
+  "error.INVALID_DISTANCE": "Quãng đường phải là số không âm.",
   "error.QUEUE_NOT_FREE": "Máy này đang có người — chỉ chuyển được sang máy đang trống.",
   "error.NOT_FOUND": "Không tìm thấy người tham gia.",
   "error.INVALID_STATUS": "Chỉ có thể chuyển những Amazer đang chờ (chưa check-in).",
@@ -250,6 +252,7 @@ const vi: Dict = {
   "elig.awarded": "Nhận quà",
   "elig.waitlist": "Ngoài suất",
   "elig.noTierGift": "Chưa cấu hình quà cho mức này (tạo quà tên \"{gift}\" ở tab Quà tặng).",
+  "elig.noTiers": "Chưa có quà nào được gắn với mức thời lượng. Hãy đặt “Mức thời lượng” cho từng quà ở bảng bên dưới.",
 
   // Moderator — config
   "cfg.loading": "Đang tải…",
@@ -418,6 +421,8 @@ const en: Dict = {
 
   "error.EMAIL_TAKEN": "That email already has an in-progress registration. You can register again after you finish or are skipped.",
   "error.GIFT_ALREADY_AWARDED": "This person has already received a gift. Check out with “No gift”.",
+  "error.GIFT_OUT_OF_STOCK": "That gift is out of stock. Pick another gift, or check out with “No gift”.",
+  "error.INVALID_DISTANCE": "Distance must be a non-negative number.",
   "error.INVALID_DURATION": "That run duration is not allowed. Please pick one from the list.",
   "error.INVALID_PIN": "Incorrect PIN.",
   "error.INVALID_EMAIL_DOMAIN": "Email must end with @mblife.vn.",
@@ -620,6 +625,7 @@ const en: Dict = {
   "elig.awarded": "Awarded",
   "elig.waitlist": "Over limit",
   "elig.noTierGift": "No gift configured for this tier (create a gift named \"{gift}\" in the Gifts tab).",
+  "elig.noTiers": "No gifts are mapped to a duration tier yet. Set each gift's “Duration tier” in the table below.",
 
   "cfg.loading": "Loading…",
   "cfg.statusTitle": "Event status",
