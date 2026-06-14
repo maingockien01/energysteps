@@ -108,6 +108,41 @@ describe("effectiveAnchorMs (idle-machine re-anchoring, #7)", () => {
   });
 });
 
+describe("participant estimate matches the moderator board (#estimate-bug)", () => {
+  const buffer = 120;
+  const grace = 180;
+
+  // Idle machine: a long-finished line, then a waiting head signs up. The
+  // participant status page (computeProjection) must show the SAME start the
+  // board (computeSlotTimer) shows — now + move-grace — NOT the stale past
+  // checkout. This is the regression the bug report describes.
+  const lastFinish = new Date(startMs + 130 * 1000).toISOString(); // > start + buffer
+  const now = startMs + 660 * 1000; // 11 min after start, window long elapsed
+  const idleQueue = [
+    entry({ position_in_queue: 1, status: "finished", actual_finish: lastFinish, run_duration_seconds: 300 }),
+    entry({ position_in_queue: 2, run_duration_seconds: 180 }), // waiting head
+    entry({ position_in_queue: 3, run_duration_seconds: 300 }),
+  ];
+
+  it("head's projected start equals the board anchor (now + grace), not the past", () => {
+    const board = computeSlotTimer(idleQueue, START, buffer, now, grace);
+    const proj = computeProjection(idleQueue, idleQueue[1], START, buffer, now, grace);
+    expect(proj.projectedStartMs).toBe(board.anchorMs);
+    expect(proj.projectedStartMs).toBe(now + grace * 1000);
+  });
+
+  it("second-in-line projection cascades from the same anchor as the board", () => {
+    const proj = computeProjection(idleQueue, idleQueue[2], START, buffer, now, grace);
+    // anchor (now+grace) + the head's (180 + 120) slot.
+    expect(proj.projectedStartMs).toBe(now + grace * 1000 + (180 + buffer) * 1000);
+  });
+
+  it("WITHOUT now/grace the old code showed the stale past time (the reported bug)", () => {
+    const buggy = computeProjection(idleQueue, idleQueue[1], START, buffer);
+    expect(buggy.projectedStartMs).toBe(Date.parse(lastFinish)); // in the past — wrong
+  });
+});
+
 describe("activeOrdered", () => {
   it("drops finished/skipped/no_show and sorts by position", () => {
     const q = [

@@ -78,7 +78,8 @@ export default function RunnersView() {
   }, [state]);
 
   // Rows after search + department filter, sorted by estimated participate time
-  // (ascending; unknown times sink to the bottom).
+  // — LATEST first (descending), so upcoming/future estimates lead and finished
+  // runners (past times) sink below them. Unknown times go last either way.
   const filtered = useMemo(() => {
     if (!state) return [];
     const q = query.trim();
@@ -88,9 +89,12 @@ export default function RunnersView() {
         (p) => q === "" || matchesVN(p.name, q) || matchesVN(p.email, q),
       )
       .sort((a, b) => {
-        const ta = estStart.get(a.id) ?? Infinity;
-        const tb = estStart.get(b.id) ?? Infinity;
-        return ta - tb;
+        const ta = estStart.get(a.id);
+        const tb = estStart.get(b.id);
+        if (ta == null && tb == null) return 0;
+        if (ta == null) return 1; // unknown times last
+        if (tb == null) return -1;
+        return tb - ta; // latest estimate first
       });
   }, [state, query, deptFilter, estStart]);
 
