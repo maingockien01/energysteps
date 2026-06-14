@@ -202,15 +202,19 @@ export default function SignUpPage() {
                     </option>
                   ))}
                 </select>
-                {/* Show which gift this duration tier carries, so the choice is
-                    informed before they commit (not revealed only afterward). */}
-                {gifts.some((g) => g.duration_seconds === durationSeconds) && (
-                  <span className="mt-1.5 block rounded-lg bg-brand/5 px-3 py-2 text-sm font-medium text-brand ring-1 ring-brand/15">
-                    {t("signup.duration.giftHint", {
-                      gift: gifts.find((g) => g.duration_seconds === durationSeconds)!.name,
-                    })}
-                  </span>
-                )}
+                {/* Team-first framing: a longer run contributes more to the
+                    department. Any mapped gift is framed as recognition of that
+                    contribution, not the reason to join. */}
+                <span className="mt-1.5 block rounded-lg bg-brand/5 px-3 py-2 text-sm text-brand ring-1 ring-brand/15">
+                  {t("signup.duration.contribHint")}
+                  {gifts.some((g) => g.duration_seconds === durationSeconds) && (
+                    <span className="mt-1 block text-brand/80">
+                      {t("signup.duration.giftHint", {
+                        gift: gifts.find((g) => g.duration_seconds === durationSeconds)!.name,
+                      })}
+                    </span>
+                  )}
+                </span>
               </Field>
             </div>
 

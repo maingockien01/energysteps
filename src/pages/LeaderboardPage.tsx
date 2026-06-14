@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 import { getLeaderboard } from "../lib/api";
 import { DOMAINS } from "../lib/domains";
 import { formatClock } from "../lib/format";
-import { useT } from "../lib/i18n";
+import { useI18n } from "../lib/i18n";
 import { card } from "../lib/ui";
 import { useVisibilityPolling } from "../lib/usePolling";
 import type { DepartmentTotal, LeaderboardEntry, LeaderboardResult } from "../lib/types";
@@ -20,8 +20,30 @@ function medal(rank: number): string {
 const chipClass =
   "rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-brand hover:text-white";
 
+// Rough walking steps per km — turns the collective km total into the big,
+// on-brand "steps" number. Approximate by design (labelled with ≈).
+const STEPS_PER_KM = 1300;
+
+// Approx road distance (km) from Hà Nội — turns the collective total into a
+// relatable "how far we've walked together" journey down the country. Place
+// names are proper nouns (shown as-is in both languages).
+const JOURNEY: { km: number; place: string }[] = [
+  { km: 90, place: "Ninh Bình" },
+  { km: 150, place: "Thanh Hóa" },
+  { km: 290, place: "Vinh (Nghệ An)" },
+  { km: 350, place: "Hà Tĩnh" },
+  { km: 490, place: "Đồng Hới (Quảng Bình)" },
+  { km: 660, place: "Huế" },
+  { km: 760, place: "Đà Nẵng" },
+  { km: 880, place: "Quảng Ngãi" },
+  { km: 1050, place: "Quy Nhơn (Bình Định)" },
+  { km: 1280, place: "Nha Trang (Khánh Hòa)" },
+  { km: 1500, place: "Phan Thiết (Bình Thuận)" },
+  { km: 1710, place: "TP. Hồ Chí Minh" },
+];
+
 export default function LeaderboardPage() {
-  const t = useT();
+  const { t, lang } = useI18n();
   const [data, setData] = useState<LeaderboardResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -86,8 +108,18 @@ export default function LeaderboardPage() {
     }))
     .filter((g) => g.entries.length > 0);
 
-  // Department progress bars (#3) — each bar relative to the leading department.
+  // Department progress bars — each bar relative to the leading department.
   const maxDeptDistance = departments.reduce((m, d) => Math.max(m, d.total_distance), 0);
+
+  // Whole-company effort. Steps make the total feel big and on-brand; the
+  // journey turns abstract km into a relatable Hà Nội → province distance;
+  // participation breadth (finishers + departments on the board) shows reach,
+  // not just distance.
+  const steps = Math.round(totalDistance * STEPS_PER_KM);
+  const stepsText = steps.toLocaleString(lang === "vi" ? "vi-VN" : "en-US");
+  const journey = [...JOURNEY].reverse().find((j) => totalDistance >= j.km) ?? null;
+  const totalFinishers = departments.reduce((a, d) => a + d.finishers, 0);
+  const deptsOnBoard = departments.filter((d) => d.finishers > 0).length;
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10">
@@ -128,6 +160,19 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="mt-1 text-sm font-medium text-white/90">
                   {t("lb.collective")}
+                </div>
+                <div className="mt-3 space-y-0.5 text-sm text-white/90">
+                  <div>
+                    {t("lb.steps", { n: stepsText })}
+                    {journey && <> · {t("lb.journey", { place: journey.place })}</>}
+                  </div>
+                  <div>
+                    {t("lb.participation", {
+                      n: totalFinishers,
+                      d: deptsOnBoard,
+                      total: departments.length,
+                    })}
+                  </div>
                 </div>
               </section>
             )}

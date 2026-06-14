@@ -168,6 +168,10 @@ export default function GiftsView() {
             <span className="text-sm font-medium text-slate-700">{t("gift.name")}</span>
             <input
               type="text"
+              lang="vi"
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder={t("gift.namePlaceholder")}
@@ -282,6 +286,10 @@ export default function GiftsView() {
                 <span className="text-sm font-medium text-slate-700">{t("gift.name")}</span>
                 <input
                   type="text"
+                  lang="vi"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-brand focus:outline-none"
