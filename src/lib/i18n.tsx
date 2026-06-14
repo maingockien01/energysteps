@@ -146,6 +146,12 @@ const vi: Dict = {
   "status.s.checked_in": "Bạn đã check-in — đến lượt bạn!",
   "status.s.signed_up": "Bạn đang trong hàng chờ.",
 
+  // Stage-aware motivational narrator (status page)
+  "story.waiting": "Còn {n} người nữa là tới lượt bạn. Mỗi bước đều góp vào thành tích Khối/Phòng 💪",
+  "story.almost": "Sắp tới lượt bạn — còn {n} người nữa thôi. Khởi động nào!",
+  "story.upNext": "Tới lượt bạn rồi! Hít một hơi thật sâu và bứt phá nào 💪",
+  "story.running": "Bạn đang chạy — cháy hết mình nào! 🔥",
+
   // Statuses (shared labels)
   "st.signed_up": "Đã đăng ký",
   "st.checked_in": "Đang chạy",
@@ -584,6 +590,12 @@ const en: Dict = {
   "status.s.no_show": "Marked as no-show.",
   "status.s.checked_in": "You're checked in — you're up!",
   "status.s.signed_up": "You're in the queue.",
+
+  // Stage-aware motivational narrator (status page)
+  "story.waiting": "{n} ahead of you. Every step adds to your department's total 💪",
+  "story.almost": "Almost your turn — just {n} ahead. Warm up!",
+  "story.upNext": "You're up! Take a breath and go for it 💪",
+  "story.running": "You're running — give it everything! 🔥",
 
   "st.signed_up": "Signed up",
   "st.checked_in": "Running",

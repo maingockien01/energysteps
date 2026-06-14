@@ -19,6 +19,9 @@ import type { ParticipantStatus, StatusResult } from "../lib/types";
 
 // Notify the runner once they're within this many places of the front.
 const NOTIFY_THRESHOLD = 2;
+// The narrator switches to the "almost your turn" beat within this many places
+// (looser than the notification cue — encouragement, not a phone buzz).
+const STORY_ALMOST_AHEAD = 5;
 
 export default function StatusPage() {
   const t = useT();
@@ -155,6 +158,18 @@ export default function StatusPage() {
         }
       : null;
 
+  // Stage-aware "narrator" line — one motivational beat that changes with where
+  // the runner is in their journey, escalating as their turn nears. Suppressed
+  // when finished (the celebration covers it) or waitlisted (its own message).
+  let storyMsg: string | null = null;
+  if (found && me && me.status !== "finished" && !me.waitlisted) {
+    if (me.status === "checked_in") storyMsg = t("story.running");
+    else if (livePosition === 1) storyMsg = t("story.upNext");
+    else if (livePosition !== null && livePosition <= STORY_ALMOST_AHEAD)
+      storyMsg = t("story.almost", { n: livePosition });
+    else if (livePosition !== null) storyMsg = t("story.waiting", { n: livePosition });
+  }
+
   // Reset the per-runner notification state whenever a different email is looked
   // up, so alerts apply to the newly looked-up person.
   useEffect(() => {
@@ -275,6 +290,11 @@ export default function StatusPage() {
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden />
               {t("status.autoUpdating")}
             </div>
+
+            {/* Stage-aware narrator line (motivation, escalates with proximity). */}
+            {storyMsg && (
+              <p className="text-center text-sm font-medium text-brand">{storyMsg}</p>
+            )}
 
             {/* Post-run celebration (P2-1) */}
             {me.status === "finished" && (
