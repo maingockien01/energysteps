@@ -80,7 +80,7 @@ const CONTENT: Record<"vi" | "en", GuideContent> = {
             kind: "steps",
             items: [
               "Đặt Số lượng máy. Chỉ đổi được trước khi bắt đầu VÀ khi chưa ai đăng ký — sau đó bị khóa.",
-              "Thêm Thời lượng chạy cho phép (theo phút). Cần ít nhất một mục.",
+              "Thêm Thời lượng tham gia cho phép (theo phút). Cần ít nhất một mục.",
               "Đặt Đệm (giây) — khoảng nghỉ giữa hai người trên cùng một máy.",
               "Đặt Thời gian bắt đầu sự kiện (giờ Việt Nam). Dùng đồng hồ trực tiếp hiển thị ngay trên trang.",
               "(Tùy chọn) Đặt Thời gian kết thúc — ai dự kiến hoàn thành sau giờ này sẽ vào danh sách chờ.",
