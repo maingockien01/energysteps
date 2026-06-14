@@ -89,6 +89,12 @@
   ol.steps li { margin: 6px 0; }
   footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 30px; }
   .pill { display:inline-block; background: rgba(221,0,113,0.1); color: var(--brand); border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; }
+  ul.check { list-style: none; padding-left: 2px; margin: 8px 0; }
+  ul.check li { position: relative; padding-left: 30px; margin: 8px 0; }
+  ul.check li::before {
+    content: "\2610"; position: absolute; left: 0; top: -1px;
+    color: var(--brand); font-size: 18px; line-height: 1.4;
+  }
 
   /* Language toggle: show only the active language */
   body.lang-en [lang="vi"] { display: none; }
@@ -139,8 +145,10 @@
       <li lang="vi"><a href="#s7">An toàn &amp; công bằng</a></li>
       <li lang="en"><a href="#s8">Known limitations</a></li>
       <li lang="vi"><a href="#s8">Hạn chế đã biết</a></li>
-      <li lang="en"><a href="#s9">Recent changes</a></li>
-      <li lang="vi"><a href="#s9">Thay đổi gần đây</a></li>
+      <li lang="en"><a href="#s9">Event-day checklist</a></li>
+      <li lang="vi"><a href="#s9">Danh sách kiểm tra ngày sự kiện</a></li>
+      <li lang="en"><a href="#s10">Recent changes</a></li>
+      <li lang="vi"><a href="#s10">Thay đổi gần đây</a></li>
     </ol>
   </nav>
 
@@ -307,8 +315,88 @@
   </section>
 
   <section class="card" id="s9">
-    <h2 class="section" lang="en"><span class="num">9</span>Recent changes in this round</h2>
-    <h2 class="section" lang="vi"><span class="num">9</span>Thay đổi gần đây trong đợt này</h2>
+    <h2 class="section" lang="en"><span class="num">9</span>Checklist for the event day <span class="pill">run-of-show</span></h2>
+    <h2 class="section" lang="vi"><span class="num">9</span>Danh sách kiểm tra cho ngày sự kiện <span class="pill">trình tự chạy</span></h2>
+    <p lang="en">A practical run-of-show, in order. Everything below is done from the <strong>moderator console</strong> (Section&nbsp;3) unless noted.</p>
+    <p lang="vi">Một trình tự chạy thực tế, theo thứ tự. Mọi mục bên dưới được thực hiện từ <strong>bảng điều khiển điều phối viên</strong> (Mục&nbsp;3) trừ khi có ghi chú khác.</p>
+
+    <h3 lang="en">A. Before doors open (setup)</h3>
+    <h3 lang="vi">A. Trước khi mở cửa (thiết lập)</h3>
+    <ul class="check" lang="en">
+      <li>In <strong>Config</strong>: set the event <strong>start &amp; end time</strong>, the <strong>check-in buffer</strong>, the <strong>allowed run durations</strong>, the <strong>machine count</strong>, and the <strong>idle-machine move grace</strong>.</li>
+      <li>In <strong>Gifts</strong>: load the catalogue, set <strong>stock counts</strong>, and map each gift to its <strong>run-duration tier</strong>.</li>
+      <li>Physically <strong>label each machine</strong> with a number that matches the app (Machine&nbsp;1, 2, 3…).</li>
+      <li><strong>Reset the event</strong> to clear any test sign-ups, then confirm the sign-up list and gift stock are clean.</li>
+      <li>Test the <strong>moderator PIN</strong> on every device that will run the Board.</li>
+      <li>Open and display the <strong>sign-up link / QR code</strong> for participants.</li>
+      <li>Put the <strong>leaderboard</strong> on the big screen and have the <strong>status-page link</strong> ready to share.</li>
+      <li>Brief moderators on the flow: <strong>check-in → run → check-out + distance → gift</strong>, plus skip / no-show, move, and undo.</li>
+    </ul>
+    <ul class="check" lang="vi">
+      <li>Trong <strong>Config</strong>: đặt <strong>thời gian bắt đầu &amp; kết thúc</strong>, <strong>khoảng đệm check-in</strong>, <strong>các thời lượng chạy được phép</strong>, <strong>số lượng máy</strong>, và <strong>thời gian di chuyển khi máy rảnh</strong>.</li>
+      <li>Trong <strong>Gifts</strong>: nạp danh mục quà, đặt <strong>số lượng tồn kho</strong>, và gán mỗi món quà vào <strong>nhóm thời lượng chạy</strong> của nó.</li>
+      <li><strong>Dán nhãn từng máy</strong> bằng số trùng với trong ứng dụng (Máy&nbsp;1, 2, 3…).</li>
+      <li><strong>Đặt lại sự kiện</strong> để xóa các lượt đăng ký thử, sau đó xác nhận danh sách đăng ký và tồn kho quà đã sạch.</li>
+      <li>Kiểm tra <strong>mã PIN điều phối viên</strong> trên mọi thiết bị sẽ chạy màn hình Board.</li>
+      <li>Mở và hiển thị <strong>liên kết / mã QR đăng ký</strong> cho người tham gia.</li>
+      <li>Đưa <strong>bảng xếp hạng</strong> lên màn hình lớn và chuẩn bị sẵn <strong>liên kết trang trạng thái</strong> để chia sẻ.</li>
+      <li>Hướng dẫn điều phối viên quy trình: <strong>check-in → chạy → check-out + quãng đường → quà</strong>, cùng với bỏ qua / vắng mặt, chuyển máy, và hoàn tác.</li>
+    </ul>
+
+    <h3 lang="en">B. When the event starts</h3>
+    <h3 lang="vi">B. Khi sự kiện bắt đầu</h3>
+    <ul class="check" lang="en">
+      <li>Press <strong>Start event</strong> in Config — only once.</li>
+      <li>Confirm the first runner on each machine appears on the <strong>Board</strong>.</li>
+      <li>Begin calling people up with <strong>“Call next”</strong> over the PA.</li>
+    </ul>
+    <ul class="check" lang="vi">
+      <li>Nhấn <strong>Bắt đầu sự kiện</strong> trong Config — chỉ một lần.</li>
+      <li>Xác nhận người đầu tiên trên mỗi máy xuất hiện trên màn hình <strong>Board</strong>.</li>
+      <li>Bắt đầu gọi người lên bằng <strong>“Gọi người tiếp theo”</strong> qua loa.</li>
+    </ul>
+
+    <h3 lang="en">C. While it’s running</h3>
+    <h3 lang="vi">C. Trong khi đang diễn ra</h3>
+    <ul class="check" lang="en">
+      <li>Keep a moderator on the <strong>Board</strong> per machine; check people <strong>in</strong> on arrival, then <strong>out</strong> when they finish. <em>Check-in is required before check-out.</em></li>
+      <li><strong>Record the distance</strong> at check-out and <strong>confirm the auto-selected gift</strong> before handing it over (override or choose “no gift” when needed).</li>
+      <li><strong>Sanity-check large distances</strong> before saving — a typo (e.g. 9999) skews the leaderboard.</li>
+      <li>Watch the <strong>Dashboard</strong> for stalls or machine imbalance; <strong>manually move</strong> a waiting runner to a free machine to rebalance.</li>
+      <li>Made a mistake? <strong>Undo</strong> within the one-minute window — it restores gift stock if needed.</li>
+      <li>Tell <strong>waitlisted</strong> people it’s a soft “maybe”; they’re promoted automatically if people ahead drop out.</li>
+    </ul>
+    <ul class="check" lang="vi">
+      <li>Giữ một điều phối viên trên <strong>Board</strong> cho mỗi máy; <strong>check-in</strong> khi người đến, rồi <strong>check-out</strong> khi họ xong. <em>Phải check-in trước khi check-out.</em></li>
+      <li><strong>Ghi nhận quãng đường</strong> khi check-out và <strong>xác nhận món quà được tự động chọn</strong> trước khi trao (có thể thay đổi hoặc chọn “không tặng quà” khi cần).</li>
+      <li><strong>Kiểm tra các quãng đường lớn</strong> trước khi lưu — một lỗi đánh máy (ví dụ 9999) sẽ làm sai lệch bảng xếp hạng.</li>
+      <li>Theo dõi <strong>Dashboard</strong> để phát hiện tắc nghẽn hoặc mất cân bằng máy; <strong>chuyển thủ công</strong> một người đang chờ sang máy trống để cân bằng.</li>
+      <li>Lỡ thao tác sai? <strong>Hoàn tác</strong> trong vòng một phút — sẽ khôi phục tồn kho quà nếu cần.</li>
+      <li>Nói với người trong <strong>danh sách chờ</strong> rằng đây là lời “có thể” mềm; họ sẽ tự động được đôn lên nếu người phía trước bỏ cuộc.</li>
+    </ul>
+
+    <h3 lang="en">D. Wrapping up</h3>
+    <h3 lang="vi">D. Kết thúc</h3>
+    <ul class="check" lang="en">
+      <li>Check out the <strong>last runners</strong> on every machine.</li>
+      <li>Announce the <strong>final department standings</strong> from the leaderboard.</li>
+      <li><strong>Export the CSV</strong> from the Export screen for your records.</li>
+      <li>Leave the leaderboard up for photos if you like.</li>
+    </ul>
+    <ul class="check" lang="vi">
+      <li>Check-out cho <strong>những người chạy cuối cùng</strong> trên mọi máy.</li>
+      <li>Công bố <strong>thứ hạng phòng ban cuối cùng</strong> từ bảng xếp hạng.</li>
+      <li><strong>Xuất CSV</strong> từ màn hình Export để lưu trữ.</li>
+      <li>Có thể để bảng xếp hạng hiển thị để chụp ảnh nếu muốn.</li>
+    </ul>
+
+    <div class="warn" lang="en"><strong>Get Config right before you go live</strong> — especially the start time and allowed durations. Estimates, the Board, and the waitlist are all built on them, so it’s far smoother to set them once up front than to change them mid-event.</div>
+    <div class="warn" lang="vi"><strong>Cấu hình cho đúng trước khi chạy thật</strong> — đặc biệt là thời gian bắt đầu và các thời lượng được phép. Thời gian dự kiến, Board, và danh sách chờ đều dựa trên chúng, nên đặt một lần ngay từ đầu sẽ trơn tru hơn nhiều so với thay đổi giữa chừng.</div>
+  </section>
+
+  <section class="card" id="s10">
+    <h2 class="section" lang="en"><span class="num">10</span>Recent changes in this round</h2>
+    <h2 class="section" lang="vi"><span class="num">10</span>Thay đổi gần đây trong đợt này</h2>
     <ul lang="en">
       <li>Registration list: shows <strong>estimated turn time</strong>, <strong>grouped by machine</strong>, <strong>sorted by time</strong>, <strong>filterable by department</strong>.</li>
       <li>Leaderboard: <strong>departments promoted to the top</strong>; <strong>all departments shown</strong> (0 km when none yet).</li>
