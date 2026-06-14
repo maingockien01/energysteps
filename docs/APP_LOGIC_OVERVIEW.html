@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>EnergySteps — How the App Works (PM Overview)</title>
+<title>EnergySteps — Cách ứng dụng hoạt động (Tổng quan cho PM)</title>
 <style>
   :root {
     --brand: #dd0071;
@@ -30,6 +30,7 @@
   }
   .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
   header.hero {
+    position: relative;
     background: linear-gradient(135deg, var(--brand), var(--brand-dark));
     color: #fff;
     padding: 48px 20px 40px;
@@ -43,6 +44,13 @@
     border-radius: 999px; padding: 3px 12px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 14px;
   }
+  .langbtn {
+    position: absolute; top: 18px; right: 20px;
+    background: rgba(255,255,255,0.18); color: #fff; border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 999px; padding: 6px 16px; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  }
+  .langbtn:hover { background: rgba(255,255,255,0.3); }
   nav.toc {
     background: var(--card); border: 1px solid var(--line); border-radius: 16px;
     padding: 18px 22px; margin-bottom: 32px;
@@ -81,129 +89,202 @@
   ol.steps li { margin: 6px 0; }
   footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 30px; }
   .pill { display:inline-block; background: rgba(221,0,113,0.1); color: var(--brand); border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; }
+
+  /* Language toggle: show only the active language */
+  body.lang-en [lang="vi"] { display: none; }
+  body.lang-vi [lang="en"] { display: none; }
+
   @media (max-width: 640px) { nav.toc ol { columns: 1; } header.hero h1 { font-size: 24px; } }
   @media print {
     body { background: #fff; }
     header.hero { background: #fff !important; color: var(--brand) !important; -webkit-print-color-adjust: exact; }
     .card, nav.toc { box-shadow: none; }
     a { color: var(--ink); text-decoration: none; }
+    .langbtn { display: none; }
   }
 </style>
 </head>
-<body>
+<body class="lang-vi">
 <header class="hero">
+  <button id="langToggle" class="langbtn" type="button">English</button>
   <div class="inner">
-    <span class="tag">Project Manager Overview</span>
-    <h1>EnergySteps — How the App Works</h1>
-    <p>A plain-language guide to what the app does, who uses it, and the rules behind the scenes. No code knowledge needed.</p>
+    <span class="tag" lang="en">Project Manager Overview</span>
+    <span class="tag" lang="vi">Tổng quan cho Project Manager</span>
+    <h1 lang="en">EnergySteps — How the App Works</h1>
+    <h1 lang="vi">EnergySteps — Cách ứng dụng hoạt động</h1>
+    <p lang="en">A plain-language guide to what the app does, who uses it, and the rules behind the scenes. No code knowledge needed.</p>
+    <p lang="vi">Hướng dẫn bằng ngôn ngữ đời thường về những gì ứng dụng làm, ai sử dụng, và các quy tắc phía sau. Không cần kiến thức lập trình.</p>
   </div>
 </header>
 
 <div class="wrap">
 
   <nav class="toc">
-    <h2>Contents</h2>
+    <h2 lang="en">Contents</h2>
+    <h2 lang="vi">Mục lục</h2>
     <ol>
-      <li><a href="#s1">What the event is</a></li>
-      <li><a href="#s2">The participant journey</a></li>
-      <li><a href="#s3">The moderator console</a></li>
-      <li><a href="#s4">The timing logic</a></li>
-      <li><a href="#s5">Gifts</a></li>
-      <li><a href="#s6">The leaderboard</a></li>
-      <li><a href="#s7">Safety &amp; fairness</a></li>
-      <li><a href="#s8">Known limitations</a></li>
-      <li><a href="#s9">Recent changes</a></li>
+      <li lang="en"><a href="#s1">What the event is</a></li>
+      <li lang="vi"><a href="#s1">Sự kiện là gì</a></li>
+      <li lang="en"><a href="#s2">The participant journey</a></li>
+      <li lang="vi"><a href="#s2">Hành trình của người tham gia</a></li>
+      <li lang="en"><a href="#s3">The moderator console</a></li>
+      <li lang="vi"><a href="#s3">Bảng điều khiển của điều phối viên</a></li>
+      <li lang="en"><a href="#s4">The timing logic</a></li>
+      <li lang="vi"><a href="#s4">Logic tính thời gian</a></li>
+      <li lang="en"><a href="#s5">Gifts</a></li>
+      <li lang="vi"><a href="#s5">Quà tặng</a></li>
+      <li lang="en"><a href="#s6">The leaderboard</a></li>
+      <li lang="vi"><a href="#s6">Bảng xếp hạng</a></li>
+      <li lang="en"><a href="#s7">Safety &amp; fairness</a></li>
+      <li lang="vi"><a href="#s7">An toàn &amp; công bằng</a></li>
+      <li lang="en"><a href="#s8">Known limitations</a></li>
+      <li lang="vi"><a href="#s8">Hạn chế đã biết</a></li>
+      <li lang="en"><a href="#s9">Recent changes</a></li>
+      <li lang="vi"><a href="#s9">Thay đổi gần đây</a></li>
     </ol>
   </nav>
 
   <section class="card" id="s1">
-    <h2 class="section"><span class="num">1</span>What the event is</h2>
-    <p class="lead">A one-day wellbeing activity (“Energy Steps”). Staff (“Amazers”) sign up to use a set of walking/running machines for a chosen duration (e.g. 2&nbsp;/&nbsp;3&nbsp;/&nbsp;5 minutes). The further they go, the higher they rank. There are a fixed number of machines, gifts to hand out, and a public leaderboard.</p>
-    <p>There are two kinds of users:</p>
+    <h2 class="section" lang="en"><span class="num">1</span>What the event is</h2>
+    <h2 class="section" lang="vi"><span class="num">1</span>Sự kiện là gì</h2>
+    <p class="lead" lang="en">A one-day wellbeing activity (“Energy Steps”). Staff (“Amazers”) sign up to use a set of walking/running machines for a chosen duration (e.g. 2&nbsp;/&nbsp;3&nbsp;/&nbsp;5 minutes). The further they go, the higher they rank. There are a fixed number of machines, gifts to hand out, and a public leaderboard.</p>
+    <p class="lead" lang="vi">Một hoạt động chăm sóc sức khỏe diễn ra trong một ngày (“Energy Steps”). Nhân viên (“Amazers”) đăng ký sử dụng một bộ máy đi bộ/chạy bộ trong khoảng thời gian họ chọn (ví dụ 2&nbsp;/&nbsp;3&nbsp;/&nbsp;5 phút). Đi càng xa, thứ hạng càng cao. Có một số lượng máy cố định, quà tặng để trao, và một bảng xếp hạng công khai.</p>
+    <p lang="en">There are two kinds of users:</p>
+    <p lang="vi">Có hai loại người dùng:</p>
     <ul>
-      <li><strong>Participants (Amazers)</strong> — sign up, check their place in line, see their result. They only ever use their phone browser.</li>
-      <li><strong>Moderators (organizers)</strong> — run the event live: call people up, check them in and out, record distance, hand out gifts, and watch the dashboard. Access is protected by a PIN.</li>
+      <li lang="en"><strong>Participants (Amazers)</strong> — sign up, check their place in line, see their result. They only ever use their phone browser.</li>
+      <li lang="vi"><strong>Người tham gia (Amazers)</strong> — đăng ký, kiểm tra vị trí của mình trong hàng chờ, xem kết quả. Họ chỉ sử dụng trình duyệt trên điện thoại.</li>
+      <li lang="en"><strong>Moderators (organizers)</strong> — run the event live: call people up, check them in and out, record distance, hand out gifts, and watch the dashboard. Access is protected by a PIN.</li>
+      <li lang="vi"><strong>Điều phối viên (ban tổ chức)</strong> — điều hành sự kiện trực tiếp: gọi người lên, check-in và check-out, ghi nhận quãng đường, trao quà, và theo dõi bảng điều khiển. Quyền truy cập được bảo vệ bằng mã PIN.</li>
     </ul>
   </section>
 
   <section class="card" id="s2">
-    <h2 class="section"><span class="num">2</span>The participant journey</h2>
-    <ol class="steps">
+    <h2 class="section" lang="en"><span class="num">2</span>The participant journey</h2>
+    <h2 class="section" lang="vi"><span class="num">2</span>Hành trình của người tham gia</h2>
+    <ol class="steps" lang="en">
       <li><strong>Sign up</strong> — name, department, email (must be a company <code>@mblife.vn</code> address), and a run duration. The system automatically assigns them to the <strong>least-busy machine</strong> and gives them a place in that machine’s line.</li>
       <li><strong>Get an estimated time</strong> — based on who is ahead of them, the app shows a projected check-in time.</li>
       <li><strong>Check status anytime</strong> — they enter their email and see their position in line, an updated estimate, and (optionally) a phone alert when they’re nearly up. <em>This page refreshes every 30 seconds rather than streaming live, which keeps us within the free hosting tier even with ~1,000 people watching.</em></li>
       <li><strong>Run</strong> — when called, a moderator checks them in, they run, then the moderator checks them out and records their distance.</li>
       <li><strong>See the result</strong> — their distance, any gift, and a link to the leaderboard.</li>
     </ol>
-    <div class="note"><strong>Multiple turns are allowed.</strong> Someone can run more than once (after finishing their previous turn). When they look up their email, they now see the <strong>full history of every turn</strong> they’ve taken, not just the latest one.</div>
-    <p><strong>Capacity / waitlist.</strong> If an organizer sets an event end time, anyone whose projected turn falls after that time is marked <strong>waitlisted</strong> (“not guaranteed”). If people ahead drop out, waitlisted runners are automatically promoted.</p>
+    <ol class="steps" lang="vi">
+      <li><strong>Đăng ký</strong> — họ tên, phòng ban, email (phải là địa chỉ công ty <code>@mblife.vn</code>), và thời lượng chạy. Hệ thống tự động xếp họ vào <strong>máy ít bận nhất</strong> và cấp cho họ một vị trí trong hàng chờ của máy đó.</li>
+      <li><strong>Nhận thời gian dự kiến</strong> — dựa trên những người đứng trước, ứng dụng hiển thị thời gian check-in dự kiến.</li>
+      <li><strong>Kiểm tra trạng thái bất cứ lúc nào</strong> — họ nhập email và xem vị trí trong hàng chờ, thời gian dự kiến đã cập nhật, và (tùy chọn) một cảnh báo trên điện thoại khi sắp đến lượt. <em>Trang này làm mới mỗi 30 giây thay vì cập nhật trực tiếp theo thời gian thực, giúp chúng ta nằm trong gói lưu trữ miễn phí ngay cả khi có khoảng 1.000 người đang theo dõi.</em></li>
+      <li><strong>Chạy</strong> — khi được gọi, điều phối viên check-in cho họ, họ chạy, rồi điều phối viên check-out và ghi nhận quãng đường.</li>
+      <li><strong>Xem kết quả</strong> — quãng đường, quà tặng (nếu có), và liên kết tới bảng xếp hạng.</li>
+    </ol>
+    <div class="note" lang="en"><strong>Multiple turns are allowed.</strong> Someone can run more than once (after finishing their previous turn). When they look up their email, they now see the <strong>full history of every turn</strong> they’ve taken, not just the latest one.</div>
+    <div class="note" lang="vi"><strong>Cho phép chạy nhiều lượt.</strong> Một người có thể chạy nhiều hơn một lần (sau khi hoàn thành lượt trước). Khi tra cứu email, giờ đây họ thấy <strong>toàn bộ lịch sử của mọi lượt chạy</strong> đã thực hiện, không chỉ lượt gần nhất.</div>
+    <p lang="en"><strong>Capacity / waitlist.</strong> If an organizer sets an event end time, anyone whose projected turn falls after that time is marked <strong>waitlisted</strong> (“not guaranteed”). If people ahead drop out, waitlisted runners are automatically promoted.</p>
+    <p lang="vi"><strong>Sức chứa / danh sách chờ.</strong> Nếu ban tổ chức đặt thời gian kết thúc sự kiện, bất kỳ ai có lượt dự kiến rơi vào sau thời điểm đó sẽ bị đánh dấu <strong>vào danh sách chờ</strong> (“không đảm bảo”). Nếu những người phía trước bỏ cuộc, người trong danh sách chờ sẽ tự động được đôn lên.</p>
   </section>
 
   <section class="card" id="s3">
-    <h2 class="section"><span class="num">3</span>The moderator console</h2>
-    <p>Six screens, behind a PIN:</p>
+    <h2 class="section" lang="en"><span class="num">3</span>The moderator console</h2>
+    <h2 class="section" lang="vi"><span class="num">3</span>Bảng điều khiển của điều phối viên</h2>
+    <p lang="en">Six screens, behind a PIN:</p>
+    <p lang="vi">Sáu màn hình, được bảo vệ bằng mã PIN:</p>
     <table>
-      <thead><tr><th>Screen</th><th>What it’s for</th></tr></thead>
+      <thead>
+        <tr lang="en"><th>Screen</th><th>What it’s for</th></tr>
+        <tr lang="vi"><th>Màn hình</th><th>Dùng để làm gì</th></tr>
+      </thead>
       <tbody>
-        <tr><td><strong>Board</strong></td><td>The live control room. Pick a machine, see who’s up, check people in/out, skip/no-show, “call next” over the PA.</td></tr>
-        <tr><td><strong>Dashboard</strong></td><td>At-a-glance event health: sign-ups, completion rate, machine use, distance totals, gifts given, recent activity.</td></tr>
-        <tr><td><strong>Registration</strong></td><td>The full sign-up list — searchable, <strong>grouped by machine, ordered by estimated turn time, filterable by department</strong>. Edit a person’s details here.</td></tr>
-        <tr><td><strong>Gifts</strong></td><td>Manage the gift catalogue and stock, and which <strong>run-duration tier</strong> each gift belongs to.</td></tr>
-        <tr><td><strong>Config</strong></td><td>Set event start/end time, the check-in buffer, allowed durations, machine count, the idle-machine “move grace”, and start/reset the event.</td></tr>
-        <tr><td><strong>Export</strong></td><td>Download all data as a CSV.</td></tr>
+        <tr lang="en"><td><strong>Board</strong></td><td>The live control room. Pick a machine, see who’s up, check people in/out, skip/no-show, “call next” over the PA.</td></tr>
+        <tr lang="vi"><td><strong>Board</strong></td><td>Phòng điều khiển trực tiếp. Chọn một máy, xem ai đang tới lượt, check-in/check-out, bỏ qua/vắng mặt, “gọi người tiếp theo” qua loa.</td></tr>
+        <tr lang="en"><td><strong>Dashboard</strong></td><td>At-a-glance event health: sign-ups, completion rate, machine use, distance totals, gifts given, recent activity.</td></tr>
+        <tr lang="vi"><td><strong>Dashboard</strong></td><td>Tổng quan nhanh tình hình sự kiện: số lượt đăng ký, tỷ lệ hoàn thành, mức sử dụng máy, tổng quãng đường, quà đã trao, hoạt động gần đây.</td></tr>
+        <tr lang="en"><td><strong>Registration</strong></td><td>The full sign-up list — searchable, <strong>grouped by machine, ordered by estimated turn time, filterable by department</strong>. Edit a person’s details here.</td></tr>
+        <tr lang="vi"><td><strong>Registration</strong></td><td>Danh sách đăng ký đầy đủ — có thể tìm kiếm, <strong>nhóm theo máy, sắp xếp theo thời gian dự kiến tới lượt, lọc theo phòng ban</strong>. Chỉnh sửa thông tin của một người tại đây.</td></tr>
+        <tr lang="en"><td><strong>Gifts</strong></td><td>Manage the gift catalogue and stock, and which <strong>run-duration tier</strong> each gift belongs to.</td></tr>
+        <tr lang="vi"><td><strong>Gifts</strong></td><td>Quản lý danh mục quà và tồn kho, và <strong>nhóm thời lượng chạy</strong> mà mỗi món quà thuộc về.</td></tr>
+        <tr lang="en"><td><strong>Config</strong></td><td>Set event start/end time, the check-in buffer, allowed durations, machine count, the idle-machine “move grace”, and start/reset the event.</td></tr>
+        <tr lang="vi"><td><strong>Config</strong></td><td>Đặt thời gian bắt đầu/kết thúc sự kiện, khoảng đệm check-in, các thời lượng được phép, số lượng máy, “thời gian di chuyển” khi máy rảnh, và bắt đầu/đặt lại sự kiện.</td></tr>
+        <tr lang="en"><td><strong>Export</strong></td><td>Download all data as a CSV.</td></tr>
+        <tr lang="vi"><td><strong>Export</strong></td><td>Tải toàn bộ dữ liệu dưới dạng CSV.</td></tr>
       </tbody>
     </table>
   </section>
 
   <section class="card" id="s4">
-    <h2 class="section"><span class="num">4</span>The timing logic <span class="pill">the heart of the app</span></h2>
-    <p>Each machine runs as a <strong>single line</strong>. Only one person is “current” at a time.</p>
+    <h2 class="section" lang="en"><span class="num">4</span>The timing logic <span class="pill">the heart of the app</span></h2>
+    <h2 class="section" lang="vi"><span class="num">4</span>Logic tính thời gian <span class="pill">trái tim của ứng dụng</span></h2>
+    <p lang="en">Each machine runs as a <strong>single line</strong>. Only one person is “current” at a time.</p>
+    <p lang="vi">Mỗi máy hoạt động như <strong>một hàng chờ duy nhất</strong>. Chỉ một người là “hiện tại” tại một thời điểm.</p>
     <ul>
-      <li><strong>Slot anchor</strong> — a person’s turn starts when the previous person on that machine finishes (or at the event start time for the very first person).</li>
-      <li><strong>Check-in window</strong> — once it’s your turn, there’s a short <strong>buffer</strong> (e.g. 2 minutes) to physically arrive and be checked in. If the buffer runs out, the run clock starts anyway, so a late arrival doesn’t steal time from everyone behind them.</li>
-      <li><strong>Estimates ripple</strong> — if someone runs long or arrives late, everyone behind them sees their estimate shift later automatically. If things run early, estimates move up.</li>
+      <li lang="en"><strong>Slot anchor</strong> — a person’s turn starts when the previous person on that machine finishes (or at the event start time for the very first person).</li>
+      <li lang="vi"><strong>Mốc bắt đầu lượt</strong> — lượt của một người bắt đầu khi người trước trên máy đó hoàn thành (hoặc tại thời điểm bắt đầu sự kiện đối với người đầu tiên).</li>
+      <li lang="en"><strong>Check-in window</strong> — once it’s your turn, there’s a short <strong>buffer</strong> (e.g. 2 minutes) to physically arrive and be checked in. If the buffer runs out, the run clock starts anyway, so a late arrival doesn’t steal time from everyone behind them.</li>
+      <li lang="vi"><strong>Cửa sổ check-in</strong> — khi đến lượt, có một <strong>khoảng đệm</strong> ngắn (ví dụ 2 phút) để đến nơi và được check-in. Nếu hết khoảng đệm, đồng hồ chạy vẫn bắt đầu, để người đến muộn không lấy mất thời gian của những người phía sau.</li>
+      <li lang="en"><strong>Estimates ripple</strong> — if someone runs long or arrives late, everyone behind them sees their estimate shift later automatically. If things run early, estimates move up.</li>
+      <li lang="vi"><strong>Thời gian dự kiến lan tỏa</strong> — nếu ai đó chạy lâu hoặc đến muộn, mọi người phía sau tự động thấy thời gian dự kiến lùi lại. Nếu mọi thứ diễn ra sớm hơn, thời gian dự kiến được đẩy lên.</li>
     </ul>
-    <h3>The “idle machine” rule (new)</h3>
-    <p><strong>The problem:</strong> if a machine sits empty for a while — everyone finished, then someone new signs up an hour later — the old logic anchored their turn to the <em>last</em> finish (an hour ago). The result: their estimate showed a time in the past, and on the live board they were instantly shown as “already running / time elapsed”, with no proper check-in window.</p>
-    <p><strong>The fix:</strong> when a machine is clearly idle (the person is still waiting and the normal check-in window has already passed unused), the app re-anchors their turn to <strong>“now + a short move grace”</strong> — a few minutes for them to walk over. This grace is set by the organizer in <strong>Config</strong> (“Idle-machine move grace”, default 3 minutes). Normal back-to-back handoffs are unaffected.</p>
+    <h3 lang="en">The “idle machine” rule (new)</h3>
+    <h3 lang="vi">Quy tắc “máy rảnh” (mới)</h3>
+    <p lang="en"><strong>The problem:</strong> if a machine sits empty for a while — everyone finished, then someone new signs up an hour later — the old logic anchored their turn to the <em>last</em> finish (an hour ago). The result: their estimate showed a time in the past, and on the live board they were instantly shown as “already running / time elapsed”, with no proper check-in window.</p>
+    <p lang="vi"><strong>Vấn đề:</strong> nếu một máy bị bỏ trống một lúc — mọi người đã chạy xong, rồi một người mới đăng ký một giờ sau đó — logic cũ neo lượt của họ vào lần hoàn thành <em>cuối cùng</em> (một giờ trước). Kết quả: thời gian dự kiến của họ hiển thị một thời điểm trong quá khứ, và trên bảng điều khiển trực tiếp họ lập tức bị hiển thị là “đang chạy / đã hết giờ”, mà không có cửa sổ check-in phù hợp.</p>
+    <p lang="en"><strong>The fix:</strong> when a machine is clearly idle (the person is still waiting and the normal check-in window has already passed unused), the app re-anchors their turn to <strong>“now + a short move grace”</strong> — a few minutes for them to walk over. This grace is set by the organizer in <strong>Config</strong> (“Idle-machine move grace”, default 3 minutes). Normal back-to-back handoffs are unaffected.</p>
+    <p lang="vi"><strong>Cách khắc phục:</strong> khi một máy rõ ràng đang rảnh (người đó vẫn đang chờ và cửa sổ check-in thông thường đã trôi qua mà không dùng đến), ứng dụng neo lại lượt của họ vào <strong>“bây giờ + một khoảng thời gian di chuyển ngắn”</strong> — vài phút để họ đi tới. Khoảng này do ban tổ chức đặt trong <strong>Config</strong> (“Thời gian di chuyển khi máy rảnh”, mặc định 3 phút). Các lượt bàn giao liên tiếp bình thường không bị ảnh hưởng.</p>
   </section>
 
   <section class="card" id="s5">
-    <h2 class="section"><span class="num">5</span>Gifts</h2>
+    <h2 class="section" lang="en"><span class="num">5</span>Gifts</h2>
+    <h2 class="section" lang="vi"><span class="num">5</span>Quà tặng</h2>
     <ul>
-      <li>Gifts have a <strong>stock count</strong> and can be <strong>mapped to a run-duration tier</strong> (e.g. the 5-minute tier gets “Set hoa quả”).</li>
-      <li><strong>At check-out, the right gift is auto-selected</strong> in the dropdown if it’s in stock — the moderator just confirms. They can always override or choose “no gift”.</li>
-      <li><strong>One gift per person (per email), ever</strong> — across all their turns.</li>
-      <li><strong>Stock is protected at the database level.</strong> If two moderators try to give out the last unit of a gift at the same time, only one succeeds; the other is cleanly told it’s out of stock. There is no overselling.</li>
+      <li lang="en">Gifts have a <strong>stock count</strong> and can be <strong>mapped to a run-duration tier</strong> (e.g. the 5-minute tier gets “Set hoa quả”).</li>
+      <li lang="vi">Quà có <strong>số lượng tồn kho</strong> và có thể được <strong>gán vào một nhóm thời lượng chạy</strong> (ví dụ nhóm 5 phút nhận “Set hoa quả”).</li>
+      <li lang="en"><strong>At check-out, the right gift is auto-selected</strong> in the dropdown if it’s in stock — the moderator just confirms. They can always override or choose “no gift”.</li>
+      <li lang="vi"><strong>Khi check-out, quà phù hợp được tự động chọn</strong> trong danh sách nếu còn hàng — điều phối viên chỉ cần xác nhận. Họ luôn có thể thay đổi hoặc chọn “không tặng quà”.</li>
+      <li lang="en"><strong>One gift per person (per email), ever</strong> — across all their turns.</li>
+      <li lang="vi"><strong>Mỗi người (theo email) chỉ nhận một quà, trọn đời</strong> — tính trên tất cả các lượt chạy.</li>
+      <li lang="en"><strong>Stock is protected at the database level.</strong> If two moderators try to give out the last unit of a gift at the same time, only one succeeds; the other is cleanly told it’s out of stock. There is no overselling.</li>
+      <li lang="vi"><strong>Tồn kho được bảo vệ ở cấp cơ sở dữ liệu.</strong> Nếu hai điều phối viên cùng trao đơn vị cuối cùng của một món quà cùng lúc, chỉ một người thành công; người kia được thông báo rõ ràng là đã hết hàng. Không có chuyện trao vượt số lượng.</li>
     </ul>
   </section>
 
   <section class="card" id="s6">
-    <h2 class="section"><span class="num">6</span>The leaderboard (public)</h2>
+    <h2 class="section" lang="en"><span class="num">6</span>The leaderboard (public)</h2>
+    <h2 class="section" lang="vi"><span class="num">6</span>Bảng xếp hạng (công khai)</h2>
     <ul>
-      <li><strong>Department standings are the headline</strong> — shown first and most prominently. <strong>Every department is listed</strong>, including those with <strong>0 km</strong> so far, so no team is invisible.</li>
-      <li><strong>Individuals</strong> are ranked underneath, grouped by run duration (you can’t fairly compare a 2-minute run to a 5-minute run on distance alone).</li>
-      <li>Individual names are <strong>de-identified</strong> to a friendly handle (e.g. “An N.”) — a deliberate privacy choice.</li>
-      <li>Like the status page, it refreshes periodically rather than streaming live.</li>
+      <li lang="en"><strong>Department standings are the headline</strong> — shown first and most prominently. <strong>Every department is listed</strong>, including those with <strong>0 km</strong> so far, so no team is invisible.</li>
+      <li lang="vi"><strong>Thứ hạng theo phòng ban là điểm nhấn chính</strong> — hiển thị đầu tiên và nổi bật nhất. <strong>Mọi phòng ban đều được liệt kê</strong>, kể cả những phòng <strong>0 km</strong> cho đến hiện tại, để không đội nào bị vô hình.</li>
+      <li lang="en"><strong>Individuals</strong> are ranked underneath, grouped by run duration (you can’t fairly compare a 2-minute run to a 5-minute run on distance alone).</li>
+      <li lang="vi"><strong>Cá nhân</strong> được xếp hạng bên dưới, nhóm theo thời lượng chạy (không thể so sánh công bằng một lượt 2 phút với một lượt 5 phút chỉ dựa trên quãng đường).</li>
+      <li lang="en">Individual names are <strong>de-identified</strong> to a friendly handle (e.g. “An N.”) — a deliberate privacy choice.</li>
+      <li lang="vi">Tên cá nhân được <strong>ẩn danh</strong> thành một biệt danh thân thiện (ví dụ “An N.”) — một lựa chọn có chủ đích để bảo vệ quyền riêng tư.</li>
+      <li lang="en">Like the status page, it refreshes periodically rather than streaming live.</li>
+      <li lang="vi">Giống như trang trạng thái, bảng xếp hạng làm mới định kỳ thay vì cập nhật trực tiếp theo thời gian thực.</li>
     </ul>
   </section>
 
   <section class="card" id="s7">
-    <h2 class="section"><span class="num">7</span>Safety &amp; fairness built in</h2>
+    <h2 class="section" lang="en"><span class="num">7</span>Safety &amp; fairness built in</h2>
+    <h2 class="section" lang="vi"><span class="num">7</span>An toàn &amp; công bằng được tích hợp sẵn</h2>
     <ul>
-      <li><strong>No double-booking a slot</strong> — concurrent sign-ups are serialized, so two people can’t land on the exact same spot.</li>
-      <li><strong>Machines are never silently reshuffled</strong> — a person keeps their assigned machine. A moderator <em>can</em> manually move a waiting runner to a machine that is currently free (to rebalance), but the app never does this on its own.</li>
-      <li><strong>Undo</strong> — an accidental check-in or check-out can be undone within a minute (restoring gift stock if needed).</li>
-      <li><strong>Distance and gift validation</strong> — negative/garbage distances and out-of-stock gifts are rejected by the database, not just the screen.</li>
-      <li><strong>Everything is in Vietnam time</strong> for everyone, regardless of their device.</li>
-      <li><strong>Audit log</strong> — every moderator action (check-in/out, skip, move, undo) is recorded.</li>
+      <li lang="en"><strong>No double-booking a slot</strong> — concurrent sign-ups are serialized, so two people can’t land on the exact same spot.</li>
+      <li lang="vi"><strong>Không trùng chỗ</strong> — các lượt đăng ký đồng thời được xử lý tuần tự, nên hai người không thể rơi vào đúng cùng một vị trí.</li>
+      <li lang="en"><strong>Machines are never silently reshuffled</strong> — a person keeps their assigned machine. A moderator <em>can</em> manually move a waiting runner to a machine that is currently free (to rebalance), but the app never does this on its own.</li>
+      <li lang="vi"><strong>Máy không bao giờ bị xáo trộn ngầm</strong> — một người giữ nguyên máy đã được phân. Điều phối viên <em>có thể</em> chuyển thủ công một người đang chờ sang một máy hiện đang trống (để cân bằng), nhưng ứng dụng không bao giờ tự làm điều này.</li>
+      <li lang="en"><strong>Undo</strong> — an accidental check-in or check-out can be undone within a minute (restoring gift stock if needed).</li>
+      <li lang="vi"><strong>Hoàn tác</strong> — một thao tác check-in hoặc check-out nhầm có thể được hoàn tác trong vòng một phút (khôi phục tồn kho quà nếu cần).</li>
+      <li lang="en"><strong>Distance and gift validation</strong> — negative/garbage distances and out-of-stock gifts are rejected by the database, not just the screen.</li>
+      <li lang="vi"><strong>Kiểm tra quãng đường và quà</strong> — quãng đường âm/không hợp lệ và quà đã hết hàng bị từ chối bởi cơ sở dữ liệu, không chỉ trên màn hình.</li>
+      <li lang="en"><strong>Everything is in Vietnam time</strong> for everyone, regardless of their device.</li>
+      <li lang="vi"><strong>Mọi thứ đều theo giờ Việt Nam</strong> cho tất cả mọi người, bất kể thiết bị của họ.</li>
+      <li lang="en"><strong>Audit log</strong> — every moderator action (check-in/out, skip, move, undo) is recorded.</li>
+      <li lang="vi"><strong>Nhật ký kiểm toán</strong> — mọi thao tác của điều phối viên (check-in/out, bỏ qua, chuyển máy, hoàn tác) đều được ghi lại.</li>
     </ul>
   </section>
 
   <section class="card" id="s8">
-    <h2 class="section"><span class="num">8</span>Known limitations / things to watch on the day</h2>
-    <p>These are honest caveats, not bugs — worth knowing as PM:</p>
-    <div class="warn">
+    <h2 class="section" lang="en"><span class="num">8</span>Known limitations / things to watch on the day</h2>
+    <h2 class="section" lang="vi"><span class="num">8</span>Hạn chế đã biết / những điều cần lưu ý trong ngày diễn ra</h2>
+    <p lang="en">These are honest caveats, not bugs — worth knowing as PM:</p>
+    <p lang="vi">Đây là những lưu ý trung thực, không phải lỗi — đáng để biết với vai trò PM:</p>
+    <div class="warn" lang="en">
       <ol class="steps" style="margin:0; padding-left:18px;">
         <li><strong>Waitlist math is optimistic.</strong> It projects finish times from the <em>planned</em> start, not from how the day is actually progressing. On a slow day it may promise spots to waitlisted people who realistically won’t fit. Treat the waitlist as a soft “maybe”, which is how it’s labelled.</li>
         <li><strong>People who sign up after the event starts</strong> don’t get an “original estimated start” stamped, so their status page shows a generic label there and their “running behind” indicator can be noisy. Their live estimate is still correct.</li>
@@ -213,22 +294,66 @@
         <li><strong>Free hosting tier</strong> caps live connections, which is why status/leaderboard pages poll every 30s instead of updating instantly. Fine for the expected crowd; just set expectations that updates aren’t millisecond-live.</li>
       </ol>
     </div>
+    <div class="warn" lang="vi">
+      <ol class="steps" style="margin:0; padding-left:18px;">
+        <li><strong>Tính toán danh sách chờ mang tính lạc quan.</strong> Nó dự đoán thời gian hoàn thành từ thời điểm bắt đầu <em>theo kế hoạch</em>, chứ không phải từ tiến độ thực tế trong ngày. Vào một ngày diễn ra chậm, nó có thể hứa chỗ cho những người trong danh sách chờ mà thực tế sẽ không kịp. Hãy xem danh sách chờ như một lời “có thể” mềm, đúng như cách nó được gắn nhãn.</li>
+        <li><strong>Những người đăng ký sau khi sự kiện đã bắt đầu</strong> không được đóng dấu “thời gian bắt đầu dự kiến ban đầu”, nên trang trạng thái của họ hiển thị nhãn chung chung ở phần đó và chỉ báo “đang bị trễ” của họ có thể bị nhiễu. Thời gian dự kiến trực tiếp của họ vẫn chính xác.</li>
+        <li><strong>Cảnh báo trên điện thoại chỉ kích hoạt khi trang trạng thái đang mở</strong> ở nền trước — chúng ta không thể thông báo cho một chiếc điện thoại đang bị khóa trong túi. Trang web có ghi rõ điều này.</li>
+        <li><strong>Quãng đường không có giới hạn trên</strong> — một lỗi đánh máy của điều phối viên (ví dụ 9999) sẽ làm sai lệch bảng xếp hạng. Đáng để kiểm tra nhanh khi ghi nhận những con số lớn.</li>
+        <li><strong>Quy tắc phân định khi hòa</strong> trong cùng một nhóm chỉ dựa trên quãng đường (không phải ai về đích sớm hơn) — một sự đơn giản hóa đã được ghi nhận và chấp nhận.</li>
+        <li><strong>Gói lưu trữ miễn phí</strong> giới hạn số kết nối trực tiếp, đó là lý do trang trạng thái/bảng xếp hạng làm mới mỗi 30 giây thay vì cập nhật tức thì. Ổn cho lượng người dự kiến; chỉ cần đặt kỳ vọng rằng cập nhật không phải tức thời theo từng mili-giây.</li>
+      </ol>
+    </div>
   </section>
 
   <section class="card" id="s9">
-    <h2 class="section"><span class="num">9</span>Recent changes in this round</h2>
-    <ul>
+    <h2 class="section" lang="en"><span class="num">9</span>Recent changes in this round</h2>
+    <h2 class="section" lang="vi"><span class="num">9</span>Thay đổi gần đây trong đợt này</h2>
+    <ul lang="en">
       <li>Registration list: shows <strong>estimated turn time</strong>, <strong>grouped by machine</strong>, <strong>sorted by time</strong>, <strong>filterable by department</strong>.</li>
       <li>Leaderboard: <strong>departments promoted to the top</strong>; <strong>all departments shown</strong> (0 km when none yet).</li>
       <li>Status page: <strong>full history of all turns</strong> for repeat participants.</li>
       <li><strong>Idle-machine estimate fix</strong> (Section 4) + a configurable move-grace setting.</li>
       <li><strong>Gift↔duration mapping</strong> with <strong>backend-driven auto-select</strong> at check-out (Section 5).</li>
     </ul>
+    <ul lang="vi">
+      <li>Danh sách đăng ký: hiển thị <strong>thời gian dự kiến tới lượt</strong>, <strong>nhóm theo máy</strong>, <strong>sắp xếp theo thời gian</strong>, <strong>lọc theo phòng ban</strong>.</li>
+      <li>Bảng xếp hạng: <strong>phòng ban được đưa lên đầu</strong>; <strong>hiển thị tất cả phòng ban</strong> (0 km khi chưa có).</li>
+      <li>Trang trạng thái: <strong>toàn bộ lịch sử mọi lượt chạy</strong> cho người tham gia chạy nhiều lần.</li>
+      <li><strong>Sửa lỗi thời gian dự kiến khi máy rảnh</strong> (Mục 4) + một thiết lập thời gian di chuyển có thể cấu hình.</li>
+      <li><strong>Gán quà↔thời lượng</strong> với <strong>tự động chọn từ backend</strong> khi check-out (Mục 5).</li>
+    </ul>
   </section>
 
   <footer>
-    EnergySteps · Project Manager Overview · generated from <code>docs/APP_LOGIC_OVERVIEW.md</code>
+    <span lang="en">EnergySteps · Project Manager Overview · generated from <code>docs/APP_LOGIC_OVERVIEW.md</code></span>
+    <span lang="vi">EnergySteps · Tổng quan cho Project Manager · tạo từ <code>docs/APP_LOGIC_OVERVIEW.md</code></span>
   </footer>
 </div>
+
+<script>
+  (function () {
+    var btn = document.getElementById('langToggle');
+    var titles = {
+      en: 'EnergySteps — How the App Works (PM Overview)',
+      vi: 'EnergySteps — Cách ứng dụng hoạt động (Tổng quan cho PM)'
+    };
+    function setLang(lang) {
+      if (lang !== 'en' && lang !== 'vi') lang = 'vi';
+      document.body.className = 'lang-' + lang;
+      document.documentElement.lang = lang;
+      document.title = titles[lang];
+      // Button shows the language you can switch TO.
+      btn.textContent = lang === 'en' ? 'Tiếng Việt' : 'English';
+      try { localStorage.setItem('es_lang', lang); } catch (e) {}
+    }
+    btn.addEventListener('click', function () {
+      setLang(document.body.classList.contains('lang-en') ? 'vi' : 'en');
+    });
+    var saved = null;
+    try { saved = localStorage.getItem('es_lang'); } catch (e) {}
+    setLang(saved || 'vi');
+  })();
+</script>
 </body>
 </html>
