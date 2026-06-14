@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EnergySteps — How the App Works (PM Overview)</title>
+<style>
+  :root {
+    --brand: #dd0071;
+    --brand-dark: #b3005c;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --amber-bg: #fffbeb;
+    --amber-line: #fcd34d;
+    --amber-ink: #92400e;
+    --green-bg: #ecfdf5;
+    --green-ink: #065f46;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: "Be Vietnam Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.65;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+  header.hero {
+    background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    color: #fff;
+    padding: 48px 20px 40px;
+    margin-bottom: 32px;
+  }
+  header.hero .inner { max-width: 880px; margin: 0 auto; }
+  header.hero h1 { margin: 0 0 6px; font-size: 30px; letter-spacing: -0.02em; }
+  header.hero p { margin: 0; opacity: 0.92; font-size: 16px; }
+  .tag {
+    display: inline-block; background: rgba(255,255,255,0.2); color: #fff;
+    border-radius: 999px; padding: 3px 12px; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 14px;
+  }
+  nav.toc {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px 22px; margin-bottom: 32px;
+  }
+  nav.toc h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 28px; }
+  nav.toc li { margin: 4px 0; break-inside: avoid; }
+  nav.toc a { color: var(--ink); text-decoration: none; }
+  nav.toc a:hover { color: var(--brand); text-decoration: underline; }
+  section.card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 8px 28px 24px; margin-bottom: 22px; box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  }
+  h2.section { color: var(--brand); font-size: 21px; margin: 24px 0 6px; letter-spacing: -0.01em; }
+  h2.section .num { color: var(--muted); font-weight: 600; margin-right: 8px; }
+  h3 { font-size: 16px; margin: 22px 0 6px; }
+  p, li { font-size: 15.5px; }
+  a { color: var(--brand); }
+  code {
+    background: #f1f5f9; padding: 1px 6px; border-radius: 6px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  .note {
+    background: var(--green-bg); color: var(--green-ink); border: 1px solid #a7f3d0;
+    border-radius: 12px; padding: 12px 16px; margin: 14px 0; font-size: 14.5px;
+  }
+  .warn {
+    background: var(--amber-bg); color: var(--amber-ink); border: 1px solid var(--amber-line);
+    border-radius: 12px; padding: 12px 16px; margin: 14px 0; font-size: 14.5px;
+  }
+  .lead { font-size: 16.5px; color: #334155; }
+  ol.steps li { margin: 6px 0; }
+  footer { color: var(--muted); font-size: 13px; text-align: center; margin-top: 30px; }
+  .pill { display:inline-block; background: rgba(221,0,113,0.1); color: var(--brand); border-radius:999px; padding:2px 10px; font-size:12px; font-weight:600; }
+  @media (max-width: 640px) { nav.toc ol { columns: 1; } header.hero h1 { font-size: 24px; } }
+  @media print {
+    body { background: #fff; }
+    header.hero { background: #fff !important; color: var(--brand) !important; -webkit-print-color-adjust: exact; }
+    .card, nav.toc { box-shadow: none; }
+    a { color: var(--ink); text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="inner">
+    <span class="tag">Project Manager Overview</span>
+    <h1>EnergySteps — How the App Works</h1>
+    <p>A plain-language guide to what the app does, who uses it, and the rules behind the scenes. No code knowledge needed.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#s1">What the event is</a></li>
+      <li><a href="#s2">The participant journey</a></li>
+      <li><a href="#s3">The moderator console</a></li>
+      <li><a href="#s4">The timing logic</a></li>
+      <li><a href="#s5">Gifts</a></li>
+      <li><a href="#s6">The leaderboard</a></li>
+      <li><a href="#s7">Safety &amp; fairness</a></li>
+      <li><a href="#s8">Known limitations</a></li>
+      <li><a href="#s9">Recent changes</a></li>
+    </ol>
+  </nav>
+
+  <section class="card" id="s1">
+    <h2 class="section"><span class="num">1</span>What the event is</h2>
+    <p class="lead">A one-day wellbeing activity (“Energy Steps”). Staff (“Amazers”) sign up to use a set of walking/running machines for a chosen duration (e.g. 2&nbsp;/&nbsp;3&nbsp;/&nbsp;5 minutes). The further they go, the higher they rank. There are a fixed number of machines, gifts to hand out, and a public leaderboard.</p>
+    <p>There are two kinds of users:</p>
+    <ul>
+      <li><strong>Participants (Amazers)</strong> — sign up, check their place in line, see their result. They only ever use their phone browser.</li>
+      <li><strong>Moderators (organizers)</strong> — run the event live: call people up, check them in and out, record distance, hand out gifts, and watch the dashboard. Access is protected by a PIN.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="s2">
+    <h2 class="section"><span class="num">2</span>The participant journey</h2>
+    <ol class="steps">
+      <li><strong>Sign up</strong> — name, department, email (must be a company <code>@mblife.vn</code> address), and a run duration. The system automatically assigns them to the <strong>least-busy machine</strong> and gives them a place in that machine’s line.</li>
+      <li><strong>Get an estimated time</strong> — based on who is ahead of them, the app shows a projected check-in time.</li>
+      <li><strong>Check status anytime</strong> — they enter their email and see their position in line, an updated estimate, and (optionally) a phone alert when they’re nearly up. <em>This page refreshes every 30 seconds rather than streaming live, which keeps us within the free hosting tier even with ~1,000 people watching.</em></li>
+      <li><strong>Run</strong> — when called, a moderator checks them in, they run, then the moderator checks them out and records their distance.</li>
+      <li><strong>See the result</strong> — their distance, any gift, and a link to the leaderboard.</li>
+    </ol>
+    <div class="note"><strong>Multiple turns are allowed.</strong> Someone can run more than once (after finishing their previous turn). When they look up their email, they now see the <strong>full history of every turn</strong> they’ve taken, not just the latest one.</div>
+    <p><strong>Capacity / waitlist.</strong> If an organizer sets an event end time, anyone whose projected turn falls after that time is marked <strong>waitlisted</strong> (“not guaranteed”). If people ahead drop out, waitlisted runners are automatically promoted.</p>
+  </section>
+
+  <section class="card" id="s3">
+    <h2 class="section"><span class="num">3</span>The moderator console</h2>
+    <p>Six screens, behind a PIN:</p>
+    <table>
+      <thead><tr><th>Screen</th><th>What it’s for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Board</strong></td><td>The live control room. Pick a machine, see who’s up, check people in/out, skip/no-show, “call next” over the PA.</td></tr>
+        <tr><td><strong>Dashboard</strong></td><td>At-a-glance event health: sign-ups, completion rate, machine use, distance totals, gifts given, recent activity.</td></tr>
+        <tr><td><strong>Registration</strong></td><td>The full sign-up list — searchable, <strong>grouped by machine, ordered by estimated turn time, filterable by department</strong>. Edit a person’s details here.</td></tr>
+        <tr><td><strong>Gifts</strong></td><td>Manage the gift catalogue and stock, and which <strong>run-duration tier</strong> each gift belongs to.</td></tr>
+        <tr><td><strong>Config</strong></td><td>Set event start/end time, the check-in buffer, allowed durations, machine count, the idle-machine “move grace”, and start/reset the event.</td></tr>
+        <tr><td><strong>Export</strong></td><td>Download all data as a CSV.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card" id="s4">
+    <h2 class="section"><span class="num">4</span>The timing logic <span class="pill">the heart of the app</span></h2>
+    <p>Each machine runs as a <strong>single line</strong>. Only one person is “current” at a time.</p>
+    <ul>
+      <li><strong>Slot anchor</strong> — a person’s turn starts when the previous person on that machine finishes (or at the event start time for the very first person).</li>
+      <li><strong>Check-in window</strong> — once it’s your turn, there’s a short <strong>buffer</strong> (e.g. 2 minutes) to physically arrive and be checked in. If the buffer runs out, the run clock starts anyway, so a late arrival doesn’t steal time from everyone behind them.</li>
+      <li><strong>Estimates ripple</strong> — if someone runs long or arrives late, everyone behind them sees their estimate shift later automatically. If things run early, estimates move up.</li>
+    </ul>
+    <h3>The “idle machine” rule (new)</h3>
+    <p><strong>The problem:</strong> if a machine sits empty for a while — everyone finished, then someone new signs up an hour later — the old logic anchored their turn to the <em>last</em> finish (an hour ago). The result: their estimate showed a time in the past, and on the live board they were instantly shown as “already running / time elapsed”, with no proper check-in window.</p>
+    <p><strong>The fix:</strong> when a machine is clearly idle (the person is still waiting and the normal check-in window has already passed unused), the app re-anchors their turn to <strong>“now + a short move grace”</strong> — a few minutes for them to walk over. This grace is set by the organizer in <strong>Config</strong> (“Idle-machine move grace”, default 3 minutes). Normal back-to-back handoffs are unaffected.</p>
+  </section>
+
+  <section class="card" id="s5">
+    <h2 class="section"><span class="num">5</span>Gifts</h2>
+    <ul>
+      <li>Gifts have a <strong>stock count</strong> and can be <strong>mapped to a run-duration tier</strong> (e.g. the 5-minute tier gets “Set hoa quả”).</li>
+      <li><strong>At check-out, the right gift is auto-selected</strong> in the dropdown if it’s in stock — the moderator just confirms. They can always override or choose “no gift”.</li>
+      <li><strong>One gift per person (per email), ever</strong> — across all their turns.</li>
+      <li><strong>Stock is protected at the database level.</strong> If two moderators try to give out the last unit of a gift at the same time, only one succeeds; the other is cleanly told it’s out of stock. There is no overselling.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="s6">
+    <h2 class="section"><span class="num">6</span>The leaderboard (public)</h2>
+    <ul>
+      <li><strong>Department standings are the headline</strong> — shown first and most prominently. <strong>Every department is listed</strong>, including those with <strong>0 km</strong> so far, so no team is invisible.</li>
+      <li><strong>Individuals</strong> are ranked underneath, grouped by run duration (you can’t fairly compare a 2-minute run to a 5-minute run on distance alone).</li>
+      <li>Individual names are <strong>de-identified</strong> to a friendly handle (e.g. “An N.”) — a deliberate privacy choice.</li>
+      <li>Like the status page, it refreshes periodically rather than streaming live.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="s7">
+    <h2 class="section"><span class="num">7</span>Safety &amp; fairness built in</h2>
+    <ul>
+      <li><strong>No double-booking a slot</strong> — concurrent sign-ups are serialized, so two people can’t land on the exact same spot.</li>
+      <li><strong>Machines are never silently reshuffled</strong> — a person keeps their assigned machine. A moderator <em>can</em> manually move a waiting runner to a machine that is currently free (to rebalance), but the app never does this on its own.</li>
+      <li><strong>Undo</strong> — an accidental check-in or check-out can be undone within a minute (restoring gift stock if needed).</li>
+      <li><strong>Distance and gift validation</strong> — negative/garbage distances and out-of-stock gifts are rejected by the database, not just the screen.</li>
+      <li><strong>Everything is in Vietnam time</strong> for everyone, regardless of their device.</li>
+      <li><strong>Audit log</strong> — every moderator action (check-in/out, skip, move, undo) is recorded.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="s8">
+    <h2 class="section"><span class="num">8</span>Known limitations / things to watch on the day</h2>
+    <p>These are honest caveats, not bugs — worth knowing as PM:</p>
+    <div class="warn">
+      <ol class="steps" style="margin:0; padding-left:18px;">
+        <li><strong>Waitlist math is optimistic.</strong> It projects finish times from the <em>planned</em> start, not from how the day is actually progressing. On a slow day it may promise spots to waitlisted people who realistically won’t fit. Treat the waitlist as a soft “maybe”, which is how it’s labelled.</li>
+        <li><strong>People who sign up after the event starts</strong> don’t get an “original estimated start” stamped, so their status page shows a generic label there and their “running behind” indicator can be noisy. Their live estimate is still correct.</li>
+        <li><strong>Phone alerts only fire while the status page is open</strong> in the foreground — we can’t notify a pocketed, locked phone. The page says so.</li>
+        <li><strong>Distance has no upper limit</strong> — a moderator typo (e.g. 9999) would skew the leaderboard. Worth a quick sanity check when recording big numbers.</li>
+        <li><strong>Leaderboard tie-break</strong> within a tier is by distance only (not earliest finish) — a documented, accepted simplification.</li>
+        <li><strong>Free hosting tier</strong> caps live connections, which is why status/leaderboard pages poll every 30s instead of updating instantly. Fine for the expected crowd; just set expectations that updates aren’t millisecond-live.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="card" id="s9">
+    <h2 class="section"><span class="num">9</span>Recent changes in this round</h2>
+    <ul>
+      <li>Registration list: shows <strong>estimated turn time</strong>, <strong>grouped by machine</strong>, <strong>sorted by time</strong>, <strong>filterable by department</strong>.</li>
+      <li>Leaderboard: <strong>departments promoted to the top</strong>; <strong>all departments shown</strong> (0 km when none yet).</li>
+      <li>Status page: <strong>full history of all turns</strong> for repeat participants.</li>
+      <li><strong>Idle-machine estimate fix</strong> (Section 4) + a configurable move-grace setting.</li>
+      <li><strong>Gift↔duration mapping</strong> with <strong>backend-driven auto-select</strong> at check-out (Section 5).</li>
+    </ul>
+  </section>
+
+  <footer>
+    EnergySteps · Project Manager Overview · generated from <code>docs/APP_LOGIC_OVERVIEW.md</code>
+  </footer>
+</div>
+</body>
+</html>
