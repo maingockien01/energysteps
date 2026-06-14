@@ -14,7 +14,7 @@ import {
 } from "../lib/notify";
 import { playChime, unlockAudio } from "../lib/sound";
 import { getRecentEmail, setRecentEmail } from "../lib/recentEmail";
-import { downloadIcs, googleCalendarUrl, outlookCalendarUrl } from "../lib/calendar";
+import AddToCalendar from "../components/AddToCalendar";
 import type { ParticipantStatus, StatusResult } from "../lib/types";
 
 // Notify the runner once they're within this many places of the front.
@@ -95,6 +95,13 @@ export default function StatusPage() {
 
   function onRefresh() {
     if (submittedEmail) void fetchStatus(submittedEmail);
+  }
+
+  // Collapse back to the lookup form to check a different email.
+  function lookupAnother() {
+    setResult(null);
+    setSubmittedEmail(null);
+    setEmailInput("");
   }
 
   // Live updates via POLLING, not realtime. Supabase Free tier caps Realtime at
@@ -200,34 +207,51 @@ export default function StatusPage() {
           <p className="mt-1 text-sm text-slate-500">{t("status.subtitle")}</p>
         </header>
 
-        {/* Lookup form */}
-        <form onSubmit={onSubmit} className={card}>
-          <label
-            htmlFor="status-email"
-            className="block text-sm font-medium text-slate-700"
-          >
-            {t("status.email.label")}
-          </label>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-            <input
-              id="status-email"
-              type="email"
-              required
-              autoComplete="email"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="you@mblife.vn"
-              className="w-full rounded-xl border-0 px-3 py-2 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand"
-            />
+        {/* Lookup form. Once a status is found it collapses into a slim bar so
+            the status itself is the page's focus; "change" reopens the form. */}
+        {found ? (
+          <div className={`${card} flex items-center justify-between gap-3`}>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-500">{t("status.viewingAs")}</p>
+              <p className="truncate text-sm font-medium text-slate-900">{submittedEmail}</p>
+            </div>
             <button
-              type="submit"
-              disabled={loading}
-              className="shrink-0 rounded-xl bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+              type="button"
+              onClick={lookupAnother}
+              className="shrink-0 rounded-xl px-3 py-1.5 text-sm font-medium text-brand ring-1 ring-brand/40 hover:bg-brand/10"
             >
-              {loading ? t("status.lookingUp") : t("status.lookup")}
+              {t("status.changeEmail")}
             </button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={onSubmit} className={card}>
+            <label
+              htmlFor="status-email"
+              className="block text-sm font-medium text-slate-700"
+            >
+              {t("status.email.label")}
+            </label>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                id="status-email"
+                type="email"
+                required
+                autoComplete="email"
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="you@mblife.vn"
+                className="w-full rounded-xl border-0 px-3 py-2 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="shrink-0 rounded-xl bg-brand px-4 py-2 font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+              >
+                {loading ? t("status.lookingUp") : t("status.lookup")}
+              </button>
+            </div>
+          </form>
+        )}
 
         {errorMsg && (
           <p className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
@@ -256,7 +280,7 @@ export default function StatusPage() {
             {me.status === "finished" && (
               <div
                 role="status"
-                className="rounded-2xl bg-emerald-50 p-6 text-center shadow-sm ring-2 ring-emerald-300"
+                className="rounded-2xl bg-emerald-50 p-5 text-center shadow-sm ring-1 ring-emerald-300"
               >
                 <p className="text-3xl" aria-hidden>
                   🎉
@@ -300,34 +324,8 @@ export default function StatusPage() {
               </div>
             )}
 
-            {/* In-tab "get ready" alerts. Only meaningful while still waiting. */}
-            {me.status !== "finished" && livePosition !== null && alertPerm !== "unsupported" && (
-              <div className="rounded-2xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-200">
-                {alertPerm === "granted" ? (
-                  <div>
-                    <span className="text-sm font-medium text-emerald-700">
-                      {t("notify.on")}
-                    </span>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {t("notify.keepOpen")}
-                    </p>
-                  </div>
-                ) : alertPerm === "denied" ? (
-                  <p className="text-xs text-slate-500">{t("notify.denied")}</p>
-                ) : (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs text-slate-500">{t("notify.keepOpen")}</p>
-                    <button
-                      type="button"
-                      onClick={() => void enableAlerts()}
-                      className="shrink-0 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-                    >
-                      {t("notify.enable")}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Reminder options (alerts + calendar) are merged into one card
+                below the details — see "Get reminded". */}
 
             {/* Delay / on-schedule banner. aria-live so screen readers announce
                 a change; ✓/⚠ icons so the state is not conveyed by color alone. */}
@@ -337,7 +335,7 @@ export default function StatusPage() {
                 <div
                   role="status"
                   aria-live="assertive"
-                  className="rounded-2xl bg-amber-50 p-6 text-center shadow-sm ring-2 ring-amber-400"
+                  className="rounded-2xl bg-amber-50 p-5 text-center shadow-sm ring-1 ring-amber-300"
                 >
                   <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
                     <span aria-hidden>⚠ </span>
@@ -356,7 +354,7 @@ export default function StatusPage() {
                 <div
                   role="status"
                   aria-live="polite"
-                  className="rounded-2xl bg-emerald-50 p-5 text-center shadow-sm ring-1 ring-emerald-200"
+                  className="rounded-2xl bg-emerald-50 p-5 text-center shadow-sm ring-1 ring-emerald-300"
                 >
                   <p className="text-lg font-semibold text-emerald-800">
                     <span aria-hidden>✓ </span>
@@ -371,7 +369,7 @@ export default function StatusPage() {
               ))}
 
             {/* Main details card */}
-            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <div className={card}>
               <dl className="space-y-4">
                 <div>
                   <dt className="text-sm font-medium text-slate-500">
@@ -382,41 +380,20 @@ export default function StatusPage() {
                   </dd>
                 </div>
 
-                <div>
-                  <dt className="text-sm font-medium text-slate-500">
-                    {t("status.originalEta")}
-                  </dt>
-                  <dd className="text-lg font-semibold text-slate-900">
-                    {me.original_estimated_start
-                      ? formatClock(Date.parse(me.original_estimated_start))
-                      : t("status.setAtStart")}
-                  </dd>
-                </div>
-
                 {projection.projectedStartMs !== null ? (
-                  <>
-                    <div>
-                      <dt className="text-sm font-medium text-slate-500">
-                        {t("status.currentEta")}
-                      </dt>
-                      <dd className="text-lg font-semibold text-slate-900">
-                        {formatClock(projection.projectedStartMs)}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="text-sm font-medium text-slate-500">
-                        {t("status.position")}
-                      </dt>
-                      <dd className="text-lg font-semibold text-slate-900">
-                        {projection.livePosition}
-                        {projection.livePosition === 1 && (
-                          <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                            {t("status.upNext")}
-                          </span>
-                        )}
-                      </dd>
-                    </div>
-                  </>
+                  <div>
+                    <dt className="text-sm font-medium text-slate-500">
+                      {t("status.position")}
+                    </dt>
+                    <dd className="text-lg font-semibold text-slate-900">
+                      {projection.livePosition}
+                      {projection.livePosition === 1 && (
+                        <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                          {t("status.upNext")}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
                 ) : (
                   <div>
                     <dt className="text-sm font-medium text-slate-500">
@@ -430,41 +407,64 @@ export default function StatusPage() {
               </dl>
             </div>
 
-            {/* Add-to-calendar reminder while still waiting. */}
-            {calEvent && (
-              <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <p className="text-xs font-medium text-slate-500">{t("cal.addLabel")}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <a
-                    href={googleCalendarUrl(calEvent)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-                  >
-                    {t("cal.googleBtn")}
-                  </a>
-                  <a
-                    href={outlookCalendarUrl(calEvent)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-                  >
-                    {t("cal.outlookBtn")}
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => downloadIcs(calEvent)}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-                  >
-                    {t("cal.icsBtn")}
-                  </button>
+            {/* Get reminded — one card for both ways to be alerted before your
+                turn: an in-page alert (only while this tab is open) and an
+                add-to-calendar reminder (works with the app closed). */}
+            {me.status !== "finished" &&
+              (calEvent || (livePosition !== null && alertPerm !== "unsupported")) && (
+                <div className={card}>
+                  <p className="text-sm font-semibold text-slate-900">{t("remind.title")}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">{t("remind.subtitle")}</p>
+                  <div className="mt-3 divide-y divide-slate-100">
+                    {/* Method 1 — in-page alert */}
+                    {livePosition !== null && alertPerm !== "unsupported" && (
+                      <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800">
+                            🔔 {t("remind.alertTitle")}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {alertPerm === "denied" ? t("notify.denied") : t("notify.keepOpen")}
+                          </p>
+                        </div>
+                        <div className="shrink-0">
+                          {alertPerm === "granted" ? (
+                            <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                              {t("remind.alertEnabled")}
+                            </span>
+                          ) : alertPerm === "default" ? (
+                            <button
+                              type="button"
+                              onClick={() => void enableAlerts()}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-brand ring-1 ring-brand/40 hover:bg-brand/10"
+                            >
+                              🔔 {t("remind.alertOn")}
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    )}
+                    {/* Method 2 — add to calendar */}
+                    {calEvent && (
+                      <div className="flex items-center justify-between gap-3 py-3 first:pt-0">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800">
+                            📅 {t("remind.calTitle")}
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500">{t("remind.calDesc")}</p>
+                        </div>
+                        <div className="shrink-0">
+                          <AddToCalendar event={calEvent} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Participation history — all results for multi-time runners. */}
             {showHistory && (
-              <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+              <div className={card}>
                 <h2 className="text-sm font-semibold text-slate-900">
                   {t("status.history.title", { n: history.length })}
                 </h2>

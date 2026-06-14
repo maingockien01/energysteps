@@ -11,7 +11,7 @@ import {
 } from "../lib/notify";
 import { unlockAudio } from "../lib/sound";
 import { setRecentEmail } from "../lib/recentEmail";
-import { downloadIcs, googleCalendarUrl, outlookCalendarUrl } from "../lib/calendar";
+import AddToCalendar from "../components/AddToCalendar";
 import type { Gift, SignUpResult } from "../lib/types";
 
 interface PublicConfig {
@@ -203,14 +203,21 @@ export default function SignUpPage() {
                   ))}
                 </select>
                 {/* Team-first framing: a longer run contributes more to the
-                    department. Any mapped gift is framed as recognition of that
-                    contribution, not the reason to join. */}
+                    department. The gift line is recognition, not the reason to
+                    join — and, mirroring the confirmation's rule, it only appears
+                    when a gift is mapped to this tier AND still in stock (we
+                    never promise a gift we can't hand out). */}
                 <span className="mt-1.5 block rounded-lg bg-brand/5 px-3 py-2 text-sm text-brand ring-1 ring-brand/15">
                   {t("signup.duration.contribHint")}
-                  {gifts.some((g) => g.duration_seconds === durationSeconds) && (
+                  {gifts.some(
+                    (g) => g.duration_seconds === durationSeconds && g.remaining_quantity > 0,
+                  ) && (
                     <span className="mt-1 block text-brand/80">
                       {t("signup.duration.giftHint", {
-                        gift: gifts.find((g) => g.duration_seconds === durationSeconds)!.name,
+                        gift: gifts.find(
+                          (g) =>
+                            g.duration_seconds === durationSeconds && g.remaining_quantity > 0,
+                        )!.name,
                       })}
                     </span>
                   )}
@@ -413,30 +420,8 @@ function ConfirmationCard({
       {calEvent && (
         <div className="mt-5">
           <p className="text-xs font-medium text-slate-500">{t("cal.addLabel")}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <a
-              href={googleCalendarUrl(calEvent)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-            >
-              {t("cal.googleBtn")}
-            </a>
-            <a
-              href={outlookCalendarUrl(calEvent)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-            >
-              {t("cal.outlookBtn")}
-            </a>
-            <button
-              type="button"
-              onClick={() => downloadIcs(calEvent)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
-            >
-              {t("cal.icsBtn")}
-            </button>
+          <div className="mt-2">
+            <AddToCalendar event={calEvent} />
           </div>
         </div>
       )}

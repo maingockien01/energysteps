@@ -18,6 +18,7 @@ const KNOWN_CODES: ApiErrorCode[] = [
   "INVALID_DURATION",
   "INVALID_EMAIL_DOMAIN",
   "INVALID_PIN",
+  "INVALID_NAME",
   "INVALID_STATUS",
   "GIFT_ALREADY_AWARDED",
   "GIFT_OUT_OF_STOCK",
@@ -208,6 +209,15 @@ export function moderatorMoveParticipant(
     p_pin: pin,
     p_participant_id: participantId,
     p_target_queue_id: targetQueueId,
+  });
+}
+
+// Rename a machine (cosmetic). See migration 0016.
+export function moderatorRenameQueue(pin: string, queueId: string, name: string) {
+  return moderatorMutation("moderator_rename_queue", {
+    p_pin: pin,
+    p_queue_id: queueId,
+    p_name: name,
   });
 }
 

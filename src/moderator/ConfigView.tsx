@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import {
   ApiError,
+  moderatorRenameQueue,
   moderatorResetEvent,
   moderatorStartEvent,
   moderatorUpdateConfig,
@@ -20,6 +21,10 @@ import { card } from "../lib/ui";
 const label = "block text-sm font-medium text-slate-700";
 const input =
   "mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+
+// Suggested machine names for MB Life — steadfast / companionship / energy /
+// wellbeing / aspiration. Tap one to fill the next still-unnamed machine.
+const SUGGESTED_MACHINE_NAMES = ["Vững Bước", "Đồng Hành", "Bứt Phá", "An Khang", "Vươn Xa"];
 
 export default function ConfigView() {
   const t = useT();
@@ -41,6 +46,18 @@ export default function ConfigView() {
   const [starting, setStarting] = useState(false);
   const [resetMsg, setResetMsg] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+
+  // Editable machine names (id -> name). Re-seeded only when the set of machines
+  // changes (a count change), so a live reload doesn't clobber in-progress edits.
+  const [machineNames, setMachineNames] = useState<Record<string, string>>({});
+  const [savingNames, setSavingNames] = useState(false);
+  const [namesMsg, setNamesMsg] = useState<string | null>(null);
+  const queueKey = state?.queues.map((q) => q.id).join(",") ?? "";
+  useEffect(() => {
+    if (!state) return;
+    setMachineNames(Object.fromEntries(state.queues.map((q) => [q.id, q.name])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueKey]);
 
   // Live Vietnam clock so the moderator can set the start time correctly.
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -152,6 +169,38 @@ export default function ConfigView() {
     }
   }
 
+  async function saveMachineNames() {
+    if (!state) return;
+    setSavingNames(true);
+    setNamesMsg(null);
+    try {
+      const changed = state.queues.filter((q) => {
+        const v = (machineNames[q.id] ?? "").trim();
+        return v !== "" && v !== q.name;
+      });
+      for (const q of changed) {
+        await moderatorRenameQueue(pin, q.id, machineNames[q.id].trim());
+      }
+      await reload();
+      setNamesMsg(t("common.saved"));
+    } catch (e) {
+      setNamesMsg(e instanceof ApiError ? t(`error.${e.code}`) : t("common.wrong"));
+    } finally {
+      setSavingNames(false);
+    }
+  }
+
+  // Fill the first still-default ("Machine N" / empty) machine with a suggestion.
+  function applySuggestion(name: string) {
+    if (!state) return;
+    const isDefault = (v: string) => {
+      const s = v.trim();
+      return s === "" || /^Machine \d+$/i.test(s);
+    };
+    const target = state.queues.find((q) => isDefault(machineNames[q.id] ?? ""));
+    if (target) setMachineNames((m) => ({ ...m, [target.id]: name }));
+  }
+
   return (
     <div className="space-y-6">
       {/* Event status */}
@@ -203,6 +252,7 @@ export default function ConfigView() {
       {/* Configuration form */}
       <section className={card}>
         <h2 className="text-lg font-semibold text-brand">{t("cfg.title")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("cfg.intro")}</p>
 
         {/* Live current time so the start time can be set correctly. */}
         <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-lg bg-slate-900 px-4 py-3 text-white">
@@ -227,6 +277,7 @@ export default function ConfigView() {
               value={startLocal}
               onChange={(e) => setStartLocal(e.target.value)}
             />
+            <p className="mt-1 text-xs text-slate-500">{t("cfg.startTimeHint")}</p>
             {state.config.event_start_time && (
               <p className="mt-1 text-xs text-slate-500">
                 {t("cfg.savedStart", {
@@ -268,6 +319,7 @@ export default function ConfigView() {
                 = {formatDuration(Math.max(0, Math.round(bufferSeconds)))}
               </p>
             )}
+            <p className="mt-1 text-xs text-slate-500">{t("cfg.bufferHint")}</p>
           </div>
 
           <div>
@@ -367,6 +419,7 @@ export default function ConfigView() {
                 </span>
               )}
             </div>
+            <p className="mt-1 text-xs text-slate-500">{t("cfg.machinesHint")}</p>
             {queueMsg && <p className="mt-1 text-sm text-red-600">{queueMsg}</p>}
           </div>
         </div>
@@ -381,6 +434,61 @@ export default function ConfigView() {
             {saving ? t("common.saving") : t("common.save")}
           </button>
           {saveMsg && <span className="text-sm text-slate-600">{saveMsg}</span>}
+        </div>
+      </section>
+
+      {/* Machine names — give each machine a fun custom name. */}
+      <section className={card}>
+        <h2 className="text-lg font-semibold text-brand">{t("cfg.machineNamesTitle")}</h2>
+        <p className="mt-1 text-sm text-slate-600">{t("cfg.machineNamesHint")}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-500">
+            {t("cfg.machineNameSuggest")}
+          </span>
+          {SUGGESTED_MACHINE_NAMES.map((name) => (
+            <button
+              key={name}
+              type="button"
+              onClick={() => applySuggestion(name)}
+              className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand transition hover:bg-brand hover:text-white"
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 space-y-3">
+          {state.queues.map((q, i) => (
+            <div key={q.id} className="flex items-center gap-3">
+              <span className="w-6 shrink-0 text-center text-sm font-semibold text-slate-400">
+                {i + 1}
+              </span>
+              <input
+                type="text"
+                lang="vi"
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                maxLength={40}
+                value={machineNames[q.id] ?? ""}
+                onChange={(e) =>
+                  setMachineNames((m) => ({ ...m, [q.id]: e.target.value }))
+                }
+                placeholder={t("cfg.machineNamePlaceholder")}
+                className={input}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void saveMachineNames()}
+            disabled={savingNames}
+            className="rounded-md bg-brand px-5 py-2 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-50"
+          >
+            {savingNames ? t("common.saving") : t("cfg.machineNamesSave")}
+          </button>
+          {namesMsg && <span className="text-sm text-slate-600">{namesMsg}</span>}
         </div>
       </section>
 

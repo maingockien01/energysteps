@@ -14,12 +14,24 @@ import { matchesVN } from "../lib/text";
 import { statusPillClass } from "../lib/ui";
 import type { Participant } from "../lib/types";
 
+// Machine filter tab + its count badge.
+const regTab = (active: boolean) =>
+  `inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition ${
+    active
+      ? "bg-brand text-white"
+      : "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-brand/50"
+  }`;
+const regTabBadge = (active: boolean) =>
+  `ml-1.5 rounded-full px-1.5 text-xs ${active ? "bg-white/20" : "bg-slate-100 text-slate-500"}`;
+
 export default function RunnersView() {
   const t = useT();
   const { state, pin, reload } = useModerator();
 
   const [query, setQuery] = useState("");
   const [deptFilter, setDeptFilter] = useState("");
+  // "" = all machines; otherwise a queue id to focus on (faster navigation).
+  const [machineFilter, setMachineFilter] = useState<string>("");
   const [editing, setEditing] = useState<Participant | null>(null);
 
   // Edit-form fields.
@@ -91,16 +103,25 @@ export default function RunnersView() {
       });
   }, [state, query, deptFilter, estStart]);
 
-  // Group the filtered rows by machine, preserving queue order.
+  // Matching count per machine (after search + department filter), for the tabs.
+  const countByQueue = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of filtered) m.set(p.assigned_queue_id, (m.get(p.assigned_queue_id) ?? 0) + 1);
+    return m;
+  }, [filtered]);
+
+  // Group the filtered rows by machine, preserving queue order. When a machine
+  // tab is selected, only that machine's group is shown.
   const groups = useMemo(() => {
     if (!state) return [];
     return state.queues
+      .filter((q) => machineFilter === "" || q.id === machineFilter)
       .map((q) => ({
         queue: q,
         rows: filtered.filter((p) => p.assigned_queue_id === q.id),
       }))
       .filter((g) => g.rows.length > 0);
-  }, [state, filtered]);
+  }, [state, filtered, machineFilter]);
 
   if (!state) {
     return <div className="text-slate-400">{t("reg.loading")}</div>;
@@ -190,6 +211,29 @@ export default function RunnersView() {
         </div>
       </div>
 
+      {/* Machine tabs — focus on one machine for faster navigation. */}
+      {state.queues.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setMachineFilter("")} className={regTab(machineFilter === "")}>
+            {t("reg.allMachines")}
+            <span className={regTabBadge(machineFilter === "")}>{filtered.length}</span>
+          </button>
+          {state.queues.map((q) => (
+            <button
+              key={q.id}
+              type="button"
+              onClick={() => setMachineFilter(q.id)}
+              className={regTab(machineFilter === q.id)}
+            >
+              {q.name}
+              <span className={regTabBadge(machineFilter === q.id)}>
+                {countByQueue.get(q.id) ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Amazer list — grouped by machine, sorted by estimated participate time */}
       {groups.length === 0 ? (
         <div className="rounded-2xl bg-white p-6 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200">
@@ -201,9 +245,12 @@ export default function RunnersView() {
             key={queue.id}
             className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200"
           >
-            <div className="flex items-baseline justify-between border-b border-slate-200 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">{queue.name}</h2>
-              <span className="text-xs text-slate-400">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+              <h2 className="flex items-center gap-2 text-base font-bold text-brand">
+                <span aria-hidden>🏃</span>
+                {queue.name}
+              </h2>
+              <span className="text-xs font-medium text-slate-500">
                 {t("reg.groupCount", { n: rows.length })}
               </span>
             </div>
