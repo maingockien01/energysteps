@@ -125,6 +125,8 @@ export default function BoardView() {
     queueParticipants,
     config.event_start_time,
     config.buffer_seconds,
+    now,
+    config.move_grace_seconds,
   );
   const head = timer.head as Participant | null;
 
@@ -299,7 +301,13 @@ export default function BoardView() {
   // we never move anyone between machines (the no-rebalancing invariant holds).
   const queueStats = queues.map((q) => {
     const list = byQueue.get(q.id) ?? [];
-    const tmr = computeSlotTimer(list, config.event_start_time, config.buffer_seconds);
+    const tmr = computeSlotTimer(
+      list,
+      config.event_start_time,
+      config.buffer_seconds,
+      now,
+      config.move_grace_seconds,
+    );
     const active = list.filter((p) => !DONE.has(p.status));
     const wasted =
       tmr.phase === "awaiting_checkin" &&
@@ -404,6 +412,8 @@ export default function BoardView() {
             list,
             config.event_start_time,
             config.buffer_seconds,
+            now,
+            config.move_grace_seconds,
           );
           const qHead = qTimer.head as Participant | null;
           const active = q.id === selectedQueue.id;

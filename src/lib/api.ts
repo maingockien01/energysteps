@@ -113,11 +113,12 @@ export async function getPublicConfig(): Promise<{
   event_end_time: string | null;
   buffer_seconds: number;
   event_started: boolean;
+  move_grace_seconds: number;
 }> {
   const { data, error } = await supabase
     .from("event_config")
     .select(
-      "allowed_run_durations,event_start_time,event_end_time,buffer_seconds,event_started",
+      "allowed_run_durations,event_start_time,event_end_time,buffer_seconds,event_started,move_grace_seconds",
     )
     .eq("id", 1)
     .single();
@@ -128,6 +129,7 @@ export async function getPublicConfig(): Promise<{
     event_end_time: string | null;
     buffer_seconds: number;
     event_started: boolean;
+    move_grace_seconds: number;
   };
 }
 
@@ -298,6 +300,7 @@ export function moderatorUpdateConfig(
     buffer_seconds: number;
     allowed_run_durations: number[];
     queue_count: number;
+    move_grace_seconds: number;
   },
 ) {
   return moderatorMutation("moderator_update_config", {
@@ -307,6 +310,7 @@ export function moderatorUpdateConfig(
     p_buffer_seconds: cfg.buffer_seconds,
     p_allowed_run_durations: cfg.allowed_run_durations,
     p_queue_count: cfg.queue_count,
+    p_move_grace_seconds: cfg.move_grace_seconds,
   });
 }
 

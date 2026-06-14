@@ -16,6 +16,7 @@ export interface EventConfig {
   allowed_run_durations: number[]; // seconds
   event_started: boolean;
   started_at: string | null;
+  move_grace_seconds: number; // #7 — grace to reach an idle machine (seconds)
 }
 
 export interface Queue {
@@ -82,6 +83,22 @@ export interface SignUpResult {
   tier_signup_count: number;
 }
 
+// One past/current participation for an email, returned by get_status_by_email
+// so a multi-time runner can see ALL their results (P—multi-signup history).
+export interface ParticipationHistoryEntry {
+  id: string;
+  position_in_queue: number;
+  run_duration_seconds: number;
+  status: ParticipantStatus;
+  original_estimated_start: string | null;
+  actual_start: string | null;
+  actual_finish: string | null;
+  distance_logged: number | null;
+  gift_name: string | null;
+  queue_name: string | null;
+  created_at: string;
+}
+
 export interface StatusResult {
   found: boolean;
   // De-identified: the matched runner's OWN status fields only (no name/email).
@@ -89,6 +106,9 @@ export interface StatusResult {
   queue?: Queue;
   config?: EventConfig;
   queue_members?: QueueMember[];
+  // Every participation for the looked-up email, newest first. Present once the
+  // 0010 migration is applied; absent on older deployments (handled gracefully).
+  history?: ParticipationHistoryEntry[];
 }
 
 // P1-5 — public leaderboard (de-identified to a friendly handle).

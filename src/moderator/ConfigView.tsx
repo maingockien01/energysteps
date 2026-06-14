@@ -29,6 +29,7 @@ export default function ConfigView() {
   const [startLocal, setStartLocal] = useState("");
   const [endLocal, setEndLocal] = useState("");
   const [bufferSeconds, setBufferSeconds] = useState(0);
+  const [moveGraceSeconds, setMoveGraceSeconds] = useState(0);
   const [durations, setDurations] = useState<number[]>([]);
   const [queueCount, setQueueCount] = useState(1);
   const [newDurationMin, setNewDurationMin] = useState("");
@@ -55,6 +56,7 @@ export default function ConfigView() {
     setStartLocal(toDatetimeLocal(config.event_start_time));
     setEndLocal(toDatetimeLocal(config.event_end_time));
     setBufferSeconds(config.buffer_seconds);
+    setMoveGraceSeconds(config.move_grace_seconds);
     setDurations([...config.allowed_run_durations].sort((a, b) => a - b));
     setQueueCount(config.queue_count);
   }, [config]);
@@ -94,6 +96,7 @@ export default function ConfigView() {
         buffer_seconds: bufferSeconds,
         allowed_run_durations: durations,
         queue_count: queueCount,
+        move_grace_seconds: moveGraceSeconds,
       });
       setSaveMsg(t("common.saved"));
       await reload();
@@ -259,6 +262,21 @@ export default function ConfigView() {
               value={bufferSeconds}
               onChange={(e) => setBufferSeconds(Number(e.target.value))}
             />
+          </div>
+
+          <div>
+            <label className={label} htmlFor="move_grace_seconds">
+              {t("cfg.moveGrace")}
+            </label>
+            <input
+              id="move_grace_seconds"
+              type="number"
+              min={0}
+              className={input}
+              value={moveGraceSeconds}
+              onChange={(e) => setMoveGraceSeconds(Number(e.target.value))}
+            />
+            <p className="mt-1 text-xs text-slate-500">{t("cfg.moveGraceHint")}</p>
           </div>
 
           <div className="sm:col-span-2">
