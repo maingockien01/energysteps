@@ -30,6 +30,7 @@ export interface Gift {
   name: string;
   total_quantity: number;
   remaining_quantity: number;
+  duration_seconds: number | null; // run-duration tier this gift is awarded for
 }
 
 export interface Participant {

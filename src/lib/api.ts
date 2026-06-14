@@ -138,7 +138,7 @@ export async function getPublicConfig(): Promise<{
 export async function getPublicGifts(): Promise<Gift[]> {
   const { data, error } = await supabase
     .from("gifts")
-    .select("id,name,total_quantity,remaining_quantity");
+    .select("id,name,total_quantity,remaining_quantity,duration_seconds");
   if (error) throw toApiError(error);
   return (data ?? []) as Gift[];
 }
@@ -266,18 +266,29 @@ export function moderatorUpdateParticipant(
   });
 }
 
-export function moderatorCreateGift(pin: string, name: string, quantity: number) {
+export function moderatorCreateGift(
+  pin: string,
+  name: string,
+  quantity: number,
+  durationSeconds: number | null = null,
+) {
   return moderatorMutation("moderator_create_gift", {
     p_pin: pin,
     p_name: name,
     p_quantity: quantity,
+    p_duration_seconds: durationSeconds,
   });
 }
 
 export function moderatorUpdateGift(
   pin: string,
   id: string,
-  fields: { name: string; total_quantity: number; remaining_quantity: number },
+  fields: {
+    name: string;
+    total_quantity: number;
+    remaining_quantity: number;
+    duration_seconds: number | null;
+  },
 ) {
   return moderatorMutation("moderator_update_gift", {
     p_pin: pin,
@@ -285,7 +296,23 @@ export function moderatorUpdateGift(
     p_name: fields.name,
     p_total_quantity: fields.total_quantity,
     p_remaining_quantity: fields.remaining_quantity,
+    p_duration_seconds: fields.duration_seconds,
   });
+}
+
+// Backend-driven gift suggestion for check-out: the in-stock gift mapped to the
+// participant's run duration (null if none / already awarded). Authoritative
+// stock read — see migration 0012.
+export async function moderatorSuggestGift(
+  pin: string,
+  participantId: string,
+): Promise<{ gift_id: string | null; gift_name: string | null }> {
+  const { data, error } = await supabase.rpc("moderator_suggest_gift", {
+    p_pin: pin,
+    p_participant_id: participantId,
+  });
+  if (error) throw toApiError(error);
+  return data as { gift_id: string | null; gift_name: string | null };
 }
 
 export function moderatorDeleteGift(pin: string, id: string) {
