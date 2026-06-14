@@ -79,6 +79,12 @@ decision — either pick a gift or tick **"No gift"** (no silent default).
 - **Tie-break:** if several runners tie on distance, the one who **finished
   earliest** wins.
 
+> **Note (see deviation D):** the running app does **not** advertise an
+> individual "top 1" gift to participants at sign-up. Sign-up messaging frames a
+> run's competitive value as contributing to the **department total distance**.
+> Confirm whether the per-level achievement award above is still being given so
+> this section and the app stay in sync.
+
 ---
 
 ## General rules (Quy định chung)
@@ -142,3 +148,17 @@ with no secondary sort — so ties are non-deterministic. Fix: add
 - A moderator can edit a runner's `run_duration_seconds` after signup, which can
   move them between levels (rule says achievement is by the *originally*
   registered level). Accepted as a manual BTC override.
+
+### D. No individual "top 1" gift surfaced at sign-up
+Per the organizer, there is **no individual "top 1" gift for individual runs** —
+an individual run's competitive contribution is to the **department total
+distance** (the headline leaderboard ranking). The sign-up confirmation messaging
+reflects this: runners who won't receive a completion gift (tier exhausted / out
+of stock / already gifted on a prior run) are encouraged that their distance adds
+to their department total, **not** that an individual prize awaits. See
+`APP_LOGIC_OVERVIEW.md §5` and the `confirm.giftGone` / `confirm.giftAlready`
+strings.
+
+This needs reconciling with §2 "Achievement awards" above (the verbatim brief,
+left intact): if the per-level top-distance prize is no longer awarded, update
+§2; if it is still given, it's simply not advertised in the sign-up flow.

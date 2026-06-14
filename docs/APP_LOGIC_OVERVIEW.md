@@ -104,6 +104,19 @@ default 3 minutes). Normal back-to-back handoffs are unaffected.
 - **Stock is protected at the database level.** If two moderators try to give
   out the last unit of a gift at the same time, only one succeeds; the other is
   cleanly told it's out of stock. There is no overselling.
+- **Sign-up confirmation messaging.** Right after signing up, the runner always
+  sees one of three gift messages:
+  1. **A tier gift is mapped, in stock, and a slot is still expected for them**
+     → the real remaining count ("N _gift_ still waiting").
+  2. **The tier's gifts are expected to be claimed by earlier finishers, are out
+     of stock, or none is mapped** → an encouraging message (no gift promised).
+  3. **They already received their one gift on a previous run** → an encouraging
+     message.
+  There is **no individual "top 1" gift** for a single run. Cases (2) and (3)
+  therefore frame the value of running as **adding to the runner's department
+  total distance** — the headline leaderboard ranking — rather than chasing an
+  individual prize. "Expected" deliberately **excludes no-shows and skips** (they
+  never finish, so they don't consume a gift slot).
 
 ---
 

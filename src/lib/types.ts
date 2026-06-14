@@ -80,8 +80,9 @@ export interface SignUpResult {
   event_start_time: string | null;
   buffer_seconds: number;
   waitlisted: boolean; // P0-2
-  // Number of sign-ups in this runner's duration tier, INCLUDING this one — used
-  // to compute the "gifts still waiting" nudge on the confirmation screen.
+  // Sign-ups still in the running for a gift in this runner's duration tier,
+  // INCLUDING this one — counts signed_up + checked_in + finished, EXCLUDES
+  // no-shows and skips. Used for the "gifts still waiting" nudge.
   tier_signup_count: number;
   // True if this email has ALREADY received a gift on a prior participation
   // (one gift per person, ever). Drives the confirmation gift message. Absent on

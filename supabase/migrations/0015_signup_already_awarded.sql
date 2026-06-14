@@ -103,10 +103,13 @@ begin
     end if;
   end if;
 
-  -- How many have signed up in this duration tier so far (this runner included).
+  -- How many are in the running for a gift in this duration tier so far (this
+  -- runner included). EXCLUDES no-shows and skips — they never finish, so they
+  -- don't consume an expected gift slot. Counts signed_up + checked_in + finished.
   select count(*) into v_tier_count
   from public.participants
-  where run_duration_seconds = p_run_duration_seconds;
+  where run_duration_seconds = p_run_duration_seconds
+    and status not in ('no_show', 'skipped');
 
   return jsonb_build_object(
     'participant', to_jsonb(v_participant),

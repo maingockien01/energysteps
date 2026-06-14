@@ -308,8 +308,9 @@ function ConfirmationCard({
   // Gift message on the confirmation screen — always present, one of three cases
   // (PM feedback item 12). The gift for this run is whichever gift is mapped to
   // the runner's duration tier (gifts.duration_seconds — the single source of
-  // truth, same mapping the check-out auto-suggest uses). The sign-up count is an
-  // intentionally rough proxy (sign-ups, not finishers).
+  // truth, same mapping the check-out auto-suggest uses). tier_signup_count is a
+  // rough proxy for eventual finishers — sign-ups still in the running (it
+  // excludes no-shows and skips, who never finish).
   //
   //   1. Tier gift mapped, in stock, AND a slot is still expected for this runner
   //      → show the real remaining count.
