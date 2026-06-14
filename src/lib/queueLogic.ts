@@ -21,6 +21,8 @@ export interface QueueEntry {
   actual_start: string | null;
   actual_finish: string | null;
   original_estimated_start: string | null;
+  // Sign-up time — the fixed reference for the idle-machine move grace (#7).
+  created_at: string;
 }
 
 function ts(value: string | null): number | null {
@@ -49,30 +51,35 @@ export const DEFAULT_MOVE_GRACE_SECONDS = 180;
 
 // The EFFECTIVE slot anchor, accounting for an idle machine (request #7).
 //
-// `headAnchorMs` is purely historical — the last checkout. When a machine sits
-// idle (the head is still waiting AND the normal check-in window has already
-// elapsed unused: now > anchor + buffer), that anchor is stale and in the past,
-// which makes the projection show a past time and the board skip the check-in
-// window. In that case we re-anchor the head to `now + moveGrace` so a runner
-// arriving onto a free machine gets a fresh window plus a few minutes to walk
-// over. Normal handoffs (anchor ≈ now, window not yet elapsed) are untouched,
-// and a future anchor (event not started yet) is never pulled earlier.
+// `headAnchorMs` is purely historical — the last checkout (or event start). When
+// a machine sits idle and a runner SIGNS UP onto it AFTER it was already free
+// (a late arrival / re-registration), that historical anchor is in the past, so
+// the raw projection shows a time that has already passed and the board would
+// flip them straight to "running / elapsed".
+//
+// Fix: when the waiting head joined *after* the machine became free
+// (created_at > raw), anchor their slot to `created_at + moveGrace` — a FIXED
+// point (their sign-up time plus a few minutes to walk over). Being fixed (not
+// `now`-relative) means the check-in countdown still ticks down and can elapse
+// — so auto-start and the wasted-machine alert keep working — and the status
+// page and board compute an identical value regardless of when each samples the
+// clock. A head who was already queued before their turn (created_at <= raw) is
+// untouched: their slot stays anchored to the previous checkout, with the buffer
+// as their normal check-in window. A running (checked-in) head is never moved.
 export function effectiveAnchorMs(
   queue: QueueEntry[],
   eventStartTime: string | null,
-  bufferSeconds: number,
-  nowMs: number | null,
   moveGraceSeconds: number = DEFAULT_MOVE_GRACE_SECONDS,
 ): number | null {
   const raw = headAnchorMs(queue, eventStartTime);
-  if (raw === null || nowMs === null) return raw;
+  if (raw === null) return raw;
   const head = activeOrdered(queue)[0];
-  // Only a WAITING head on an idle machine is re-anchored. A checked-in (running)
-  // head occupies the machine, so its historical anchor still governs the slot.
   if (!head || head.status === "checked_in") return raw;
-  const windowElapsed = nowMs > raw + bufferSeconds * 1000;
-  if (!windowElapsed) return raw;
-  return Math.max(raw, nowMs + moveGraceSeconds * 1000);
+  const joined = ts(head.created_at);
+  if (joined !== null && joined > raw) {
+    return joined + moveGraceSeconds * 1000;
+  }
+  return raw;
 }
 
 // Not-yet-done members, in queue order. The first is the current head.
@@ -98,14 +105,13 @@ export interface Projection {
 }
 
 // Compute the live projection for one target entry within its queue.
-// `nowMs` (+ optional `moveGraceSeconds`) enables idle-machine re-anchoring
-// (request #7); pass null to keep the purely-historical anchor.
+// `moveGraceSeconds` feeds the idle-machine re-anchor (request #7); the math is
+// deterministic (no `now`) so the participant page and board always agree.
 export function computeProjection(
   queue: QueueEntry[],
   target: QueueEntry,
   eventStartTime: string | null,
   bufferSeconds: number,
-  nowMs: number | null = null,
   moveGraceSeconds: number = DEFAULT_MOVE_GRACE_SECONDS,
 ): Projection {
   const active = activeOrdered(queue);
@@ -127,13 +133,7 @@ export function computeProjection(
     };
   }
 
-  const anchor = effectiveAnchorMs(
-    queue,
-    eventStartTime,
-    bufferSeconds,
-    nowMs,
-    moveGraceSeconds,
-  );
+  const anchor = effectiveAnchorMs(queue, eventStartTime, moveGraceSeconds);
   let projectedStartMs: number | null = null;
   if (anchor !== null) {
     let acc = anchor;
@@ -193,14 +193,12 @@ export interface SlotTimer {
 }
 
 // The checkout-anchored slot timer for one queue. The component supplies its
-// own ticking `now` to render countdowns from these target timestamps. Passing
-// `nowMs` also enables idle-machine re-anchoring (request #7) so a runner
-// arriving onto a free machine gets a fresh check-in window.
+// own ticking `now` to render countdowns from these target timestamps. The
+// anchor includes the idle-machine re-anchor (request #7) for a late arrival.
 export function computeSlotTimer(
   queue: QueueEntry[],
   eventStartTime: string | null,
   bufferSeconds: number,
-  nowMs: number | null = null,
   moveGraceSeconds: number = DEFAULT_MOVE_GRACE_SECONDS,
 ): SlotTimer {
   const active = activeOrdered(queue);
@@ -216,13 +214,7 @@ export function computeSlotTimer(
     };
   }
 
-  const anchorMs = effectiveAnchorMs(
-    queue,
-    eventStartTime,
-    bufferSeconds,
-    nowMs,
-    moveGraceSeconds,
-  );
+  const anchorMs = effectiveAnchorMs(queue, eventStartTime, moveGraceSeconds);
   if (anchorMs === null) {
     return {
       phase: "no_start_time",

@@ -2,7 +2,7 @@
 // selectable tab; for the selected queue it drives the checkout-anchored slot
 // timer (computeSlotTimer) with a ticking `now`, renders the current head by
 // phase, and exposes check-in / check-out / skip controls plus an upcoming list.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useModerator } from "./context";
 import { computeSlotTimer } from "../lib/queueLogic";
 import {
@@ -54,6 +54,9 @@ export default function BoardView() {
   const [skipGift, setSkipGift] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
+  // True once the moderator touches the gift controls during a check-out, so the
+  // async backend gift suggestion can't overwrite their manual choice.
+  const giftTouchedRef = useRef(false);
   const [station, setStation] = useState<string | null>(() => {
     try {
       return localStorage.getItem(STATION_KEY);
@@ -126,7 +129,6 @@ export default function BoardView() {
     queueParticipants,
     config.event_start_time,
     config.buffer_seconds,
-    now,
     config.move_grace_seconds,
   );
   const head = timer.head as Participant | null;
@@ -172,6 +174,7 @@ export default function BoardView() {
     const h = head;
     setDistanceInput("");
     setGiftInput("");
+    giftTouchedRef.current = false;
     // If this email already received a gift, pre-set the explicit opt-out so the
     // moderator can only check out without one.
     setSkipGift(alreadyAwarded);
@@ -182,8 +185,13 @@ export default function BoardView() {
     if (!alreadyAwarded) {
       void moderatorSuggestGift(pin, h.id)
         .then((s) => {
-          // Ignore if the panel was closed/changed meanwhile or stock ran out.
-          if (s.gift_id && availableGifts.some((g) => g.id === s.gift_id)) {
+          // Don't overwrite a choice the moderator already made, and ignore a
+          // gift that's no longer in stock or a panel that moved on.
+          if (
+            !giftTouchedRef.current &&
+            s.gift_id &&
+            availableGifts.some((g) => g.id === s.gift_id)
+          ) {
             setGiftInput(s.gift_id);
             setSkipGift(false);
           }
@@ -324,7 +332,6 @@ export default function BoardView() {
       list,
       config.event_start_time,
       config.buffer_seconds,
-      now,
       config.move_grace_seconds,
     );
     const active = list.filter((p) => !DONE.has(p.status));
@@ -431,7 +438,6 @@ export default function BoardView() {
             list,
             config.event_start_time,
             config.buffer_seconds,
-            now,
             config.move_grace_seconds,
           );
           const qHead = qTimer.head as Participant | null;
@@ -631,6 +637,7 @@ export default function BoardView() {
                 value={giftInput}
                 disabled={skipGift}
                 onChange={(e) => {
+                  giftTouchedRef.current = true;
                   setGiftInput(e.target.value);
                   if (e.target.value !== "") setSkipGift(false);
                 }}
@@ -651,6 +658,7 @@ export default function BoardView() {
                   checked={skipGift}
                   disabled={alreadyAwarded}
                   onChange={(e) => {
+                    giftTouchedRef.current = true;
                     setSkipGift(e.target.checked);
                     if (e.target.checked) setGiftInput("");
                   }}

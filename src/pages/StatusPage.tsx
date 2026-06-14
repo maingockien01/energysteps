@@ -110,7 +110,6 @@ export default function StatusPage() {
           me,
           config.event_start_time,
           config.buffer_seconds,
-          Date.now(),
           config.move_grace_seconds,
         )
       : null;

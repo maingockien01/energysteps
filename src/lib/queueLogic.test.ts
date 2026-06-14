@@ -10,6 +10,9 @@ import {
 
 const START = "2026-06-10T09:00:00.000Z";
 const startMs = Date.parse(START);
+// Default sign-up time: well before the event start, so a head counts as
+// "already queued" (no idle move-grace) unless a test overrides created_at.
+const EARLY = "2026-06-10T08:00:00.000Z";
 
 function entry(p: Partial<QueueEntry> & { position_in_queue: number }): QueueEntry {
   return {
@@ -18,6 +21,7 @@ function entry(p: Partial<QueueEntry> & { position_in_queue: number }): QueueEnt
     actual_start: null,
     actual_finish: null,
     original_estimated_start: null,
+    created_at: EARLY,
     ...p,
   };
 }
@@ -45,66 +49,59 @@ describe("headAnchorMs", () => {
 describe("effectiveAnchorMs (idle-machine re-anchoring, #7)", () => {
   const buffer = 120;
   const grace = 180;
+  const finish = new Date(startMs + 720 * 1000).toISOString(); // last checkout
+  const lateJoin = new Date(startMs + 3600 * 1000).toISOString(); // signed up an hour later
 
-  it("re-anchors a waiting head to now+grace when the machine sat idle", () => {
-    // Last checkout long ago; head still waiting; check-in window long elapsed.
-    const finish = new Date(startMs + 720 * 1000).toISOString();
-    const now = startMs + 3600 * 1000; // an hour later
+  it("re-anchors a LATE arrival to created_at + grace (fixed, not now-relative)", () => {
     const q = [
       entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
-      entry({ position_in_queue: 2 }), // waiting head
+      entry({ position_in_queue: 2, created_at: lateJoin }), // joined after machine freed
     ];
-    expect(effectiveAnchorMs(q, START, buffer, now, grace)).toBe(now + grace * 1000);
+    expect(effectiveAnchorMs(q, START, grace)).toBe(Date.parse(lateJoin) + grace * 1000);
   });
 
-  it("does NOT re-anchor during a normal handoff (window not yet elapsed)", () => {
-    const finish = new Date(startMs + 720 * 1000).toISOString();
-    const now = startMs + 740 * 1000; // 20s after checkout, within the buffer window
+  it("does NOT re-anchor a head who was already queued before their turn", () => {
     const q = [
       entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
-      entry({ position_in_queue: 2 }),
+      entry({ position_in_queue: 2, created_at: EARLY }), // waiting since before
     ];
-    expect(effectiveAnchorMs(q, START, buffer, now, grace)).toBe(Date.parse(finish));
+    expect(effectiveAnchorMs(q, START, grace)).toBe(Date.parse(finish));
   });
 
   it("does NOT re-anchor a running (checked_in) head", () => {
-    const finish = new Date(startMs + 720 * 1000).toISOString();
-    const now = startMs + 3600 * 1000;
     const q = [
       entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
-      entry({ position_in_queue: 2, status: "checked_in" }),
+      entry({ position_in_queue: 2, status: "checked_in", created_at: lateJoin }),
     ];
-    expect(effectiveAnchorMs(q, START, buffer, now, grace)).toBe(Date.parse(finish));
+    expect(effectiveAnchorMs(q, START, grace)).toBe(Date.parse(finish));
   });
 
   it("never pulls a future anchor earlier (event not started yet)", () => {
     const future = "2026-06-10T10:00:00.000Z";
-    const now = Date.parse("2026-06-10T09:00:00.000Z");
-    const q = [entry({ position_in_queue: 1 })];
-    expect(effectiveAnchorMs(q, future, buffer, now, grace)).toBe(Date.parse(future));
+    const q = [entry({ position_in_queue: 1, created_at: EARLY })];
+    expect(effectiveAnchorMs(q, future, grace)).toBe(Date.parse(future));
   });
 
-  it("falls back to the historical anchor when now is not supplied", () => {
-    const finish = new Date(startMs + 720 * 1000).toISOString();
+  it("is deterministic — no dependence on the wall clock", () => {
     const q = [
       entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
-      entry({ position_in_queue: 2 }),
+      entry({ position_in_queue: 2, created_at: lateJoin }),
     ];
-    expect(effectiveAnchorMs(q, START, buffer, null, grace)).toBe(Date.parse(finish));
+    // Called twice (any 'now'), the fixed anchor is identical.
+    expect(effectiveAnchorMs(q, START, grace)).toBe(effectiveAnchorMs(q, START, grace));
   });
 
-  it("a fresh head on an idle machine gets a real check-in window, not auto-run", () => {
-    const finish = new Date(startMs + 720 * 1000).toISOString();
-    const now = startMs + 3600 * 1000;
+  it("a late arrival gets a real check-in window whose deadline can elapse", () => {
     const q = [
       entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
-      entry({ position_in_queue: 2, run_duration_seconds: 600 }),
+      entry({ position_in_queue: 2, run_duration_seconds: 600, created_at: lateJoin }),
     ];
-    const t = computeSlotTimer(q, START, buffer, now, grace);
+    const t = computeSlotTimer(q, START, buffer, grace);
     expect(t.phase).toBe("awaiting_checkin");
-    expect(t.anchorMs).toBe(now + grace * 1000);
-    // Deadline is in the FUTURE — they are not flipped straight to elapsed/auto-run.
-    expect(t.checkInDeadlineMs! > now).toBe(true);
+    expect(t.anchorMs).toBe(Date.parse(lateJoin) + grace * 1000);
+    // Deadline = created_at + grace + buffer — a FIXED point, so a ticking clock
+    // crosses it and the window elapses (auto-start / no-show stays functional).
+    expect(t.checkInDeadlineMs).toBe(Date.parse(lateJoin) + (grace + buffer) * 1000);
   });
 });
 
@@ -112,34 +109,41 @@ describe("participant estimate matches the moderator board (#estimate-bug)", () 
   const buffer = 120;
   const grace = 180;
 
-  // Idle machine: a long-finished line, then a waiting head signs up. The
+  // Idle machine: a finished line, then a LATE arrival signs up onto it. The
   // participant status page (computeProjection) must show the SAME start the
-  // board (computeSlotTimer) shows — now + move-grace — NOT the stale past
-  // checkout. This is the regression the bug report describes.
-  const lastFinish = new Date(startMs + 130 * 1000).toISOString(); // > start + buffer
-  const now = startMs + 660 * 1000; // 11 min after start, window long elapsed
+  // board (computeSlotTimer) shows — created_at + move-grace — NOT the stale
+  // past checkout. Because the anchor is fixed (not now-relative), both screens
+  // agree no matter when each samples the clock.
+  const lastFinish = new Date(startMs + 130 * 1000).toISOString();
+  const lateJoin = new Date(startMs + 600 * 1000).toISOString(); // signed up after the machine freed
   const idleQueue = [
     entry({ position_in_queue: 1, status: "finished", actual_finish: lastFinish, run_duration_seconds: 300 }),
-    entry({ position_in_queue: 2, run_duration_seconds: 180 }), // waiting head
-    entry({ position_in_queue: 3, run_duration_seconds: 300 }),
+    entry({ position_in_queue: 2, run_duration_seconds: 180, created_at: lateJoin }), // late head
+    entry({ position_in_queue: 3, run_duration_seconds: 300, created_at: lateJoin }),
   ];
 
-  it("head's projected start equals the board anchor (now + grace), not the past", () => {
-    const board = computeSlotTimer(idleQueue, START, buffer, now, grace);
-    const proj = computeProjection(idleQueue, idleQueue[1], START, buffer, now, grace);
+  it("head's projected start equals the board anchor (created_at + grace), not the past", () => {
+    const board = computeSlotTimer(idleQueue, START, buffer, grace);
+    const proj = computeProjection(idleQueue, idleQueue[1], START, buffer, grace);
     expect(proj.projectedStartMs).toBe(board.anchorMs);
-    expect(proj.projectedStartMs).toBe(now + grace * 1000);
+    expect(proj.projectedStartMs).toBe(Date.parse(lateJoin) + grace * 1000);
   });
 
   it("second-in-line projection cascades from the same anchor as the board", () => {
-    const proj = computeProjection(idleQueue, idleQueue[2], START, buffer, now, grace);
-    // anchor (now+grace) + the head's (180 + 120) slot.
-    expect(proj.projectedStartMs).toBe(now + grace * 1000 + (180 + buffer) * 1000);
+    const proj = computeProjection(idleQueue, idleQueue[2], START, buffer, grace);
+    // anchor (created_at + grace) + the head's (180 + 120) slot.
+    expect(proj.projectedStartMs).toBe(
+      Date.parse(lateJoin) + grace * 1000 + (180 + buffer) * 1000,
+    );
   });
 
-  it("WITHOUT now/grace the old code showed the stale past time (the reported bug)", () => {
-    const buggy = computeProjection(idleQueue, idleQueue[1], START, buffer);
-    expect(buggy.projectedStartMs).toBe(Date.parse(lastFinish)); // in the past — wrong
+  it("an already-queued head (not a late arrival) anchors to the previous checkout", () => {
+    const queued = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: lastFinish, run_duration_seconds: 300 }),
+      entry({ position_in_queue: 2, run_duration_seconds: 180, created_at: EARLY }),
+    ];
+    const proj = computeProjection(queued, queued[1], START, buffer, grace);
+    expect(proj.projectedStartMs).toBe(Date.parse(lastFinish)); // no grace — they were waiting
   });
 });
 

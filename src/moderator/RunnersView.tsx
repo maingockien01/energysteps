@@ -46,16 +46,9 @@ export default function RunnersView() {
     const map = new Map<string, number | null>();
     if (!state) return map;
     const { event_start_time, buffer_seconds, move_grace_seconds } = state.config;
-    const now = Date.now();
     for (const q of state.queues) {
       const all = state.participants.filter((p) => p.assigned_queue_id === q.id);
-      let acc = effectiveAnchorMs(
-        all,
-        event_start_time,
-        buffer_seconds,
-        now,
-        move_grace_seconds,
-      );
+      let acc = effectiveAnchorMs(all, event_start_time, move_grace_seconds);
       for (const p of activeOrdered(all) as Participant[]) {
         map.set(p.id, acc);
         if (acc !== null) acc += (p.run_duration_seconds + buffer_seconds) * 1000;

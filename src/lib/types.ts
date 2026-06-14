@@ -60,6 +60,7 @@ export interface QueueMember {
   original_estimated_start: string | null;
   actual_start: string | null;
   actual_finish: string | null;
+  created_at: string; // sign-up time — drives the idle-machine move grace (#7)
 }
 
 // The matched runner's own status — QueueMember plus their own (non-identity)
