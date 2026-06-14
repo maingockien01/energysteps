@@ -3,6 +3,7 @@ import {
   activeOrdered,
   computeProjection,
   computeSlotTimer,
+  effectiveAnchorMs,
   headAnchorMs,
   type QueueEntry,
 } from "./queueLogic";
@@ -38,6 +39,72 @@ describe("headAnchorMs", () => {
 
   it("is null with no event start and no finishes", () => {
     expect(headAnchorMs([entry({ position_in_queue: 1 })], null)).toBeNull();
+  });
+});
+
+describe("effectiveAnchorMs (idle-machine re-anchoring, #7)", () => {
+  const buffer = 120;
+  const grace = 180;
+
+  it("re-anchors a waiting head to now+grace when the machine sat idle", () => {
+    // Last checkout long ago; head still waiting; check-in window long elapsed.
+    const finish = new Date(startMs + 720 * 1000).toISOString();
+    const now = startMs + 3600 * 1000; // an hour later
+    const q = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
+      entry({ position_in_queue: 2 }), // waiting head
+    ];
+    expect(effectiveAnchorMs(q, START, buffer, now, grace)).toBe(now + grace * 1000);
+  });
+
+  it("does NOT re-anchor during a normal handoff (window not yet elapsed)", () => {
+    const finish = new Date(startMs + 720 * 1000).toISOString();
+    const now = startMs + 740 * 1000; // 20s after checkout, within the buffer window
+    const q = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
+      entry({ position_in_queue: 2 }),
+    ];
+    expect(effectiveAnchorMs(q, START, buffer, now, grace)).toBe(Date.parse(finish));
+  });
+
+  it("does NOT re-anchor a running (checked_in) head", () => {
+    const finish = new Date(startMs + 720 * 1000).toISOString();
+    const now = startMs + 3600 * 1000;
+    const q = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
+      entry({ position_in_queue: 2, status: "checked_in" }),
+    ];
+    expect(effectiveAnchorMs(q, START, buffer, now, grace)).toBe(Date.parse(finish));
+  });
+
+  it("never pulls a future anchor earlier (event not started yet)", () => {
+    const future = "2026-06-10T10:00:00.000Z";
+    const now = Date.parse("2026-06-10T09:00:00.000Z");
+    const q = [entry({ position_in_queue: 1 })];
+    expect(effectiveAnchorMs(q, future, buffer, now, grace)).toBe(Date.parse(future));
+  });
+
+  it("falls back to the historical anchor when now is not supplied", () => {
+    const finish = new Date(startMs + 720 * 1000).toISOString();
+    const q = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
+      entry({ position_in_queue: 2 }),
+    ];
+    expect(effectiveAnchorMs(q, START, buffer, null, grace)).toBe(Date.parse(finish));
+  });
+
+  it("a fresh head on an idle machine gets a real check-in window, not auto-run", () => {
+    const finish = new Date(startMs + 720 * 1000).toISOString();
+    const now = startMs + 3600 * 1000;
+    const q = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: finish }),
+      entry({ position_in_queue: 2, run_duration_seconds: 600 }),
+    ];
+    const t = computeSlotTimer(q, START, buffer, now, grace);
+    expect(t.phase).toBe("awaiting_checkin");
+    expect(t.anchorMs).toBe(now + grace * 1000);
+    // Deadline is in the FUTURE — they are not flipped straight to elapsed/auto-run.
+    expect(t.checkInDeadlineMs! > now).toBe(true);
   });
 });
 

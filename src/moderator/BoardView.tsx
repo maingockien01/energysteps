@@ -11,6 +11,7 @@ import {
   moderatorCheckOut,
   moderatorMoveParticipant,
   moderatorSkip,
+  moderatorSuggestGift,
   moderatorUndoCheckIn,
   moderatorUndoCheckOut,
 } from "../lib/api";
@@ -125,6 +126,8 @@ export default function BoardView() {
     queueParticipants,
     config.event_start_time,
     config.buffer_seconds,
+    now,
+    config.move_grace_seconds,
   );
   const head = timer.head as Participant | null;
 
@@ -165,12 +168,30 @@ export default function BoardView() {
   }
 
   function openCheckout() {
+    if (!head) return;
+    const h = head;
     setDistanceInput("");
     setGiftInput("");
     // If this email already received a gift, pre-set the explicit opt-out so the
     // moderator can only check out without one.
     setSkipGift(alreadyAwarded);
     setCheckoutOpen(true);
+    // Backend-driven auto-select: ask the server for the in-stock gift mapped to
+    // this runner's duration (authoritative stock; null if none/already awarded)
+    // and pre-fill the dropdown. The moderator can still change or clear it.
+    if (!alreadyAwarded) {
+      void moderatorSuggestGift(pin, h.id)
+        .then((s) => {
+          // Ignore if the panel was closed/changed meanwhile or stock ran out.
+          if (s.gift_id && availableGifts.some((g) => g.id === s.gift_id)) {
+            setGiftInput(s.gift_id);
+            setSkipGift(false);
+          }
+        })
+        .catch(() => {
+          // Suggestion is best-effort; leave the dropdown unset on error.
+        });
+    }
   }
 
   function confirmCheckout() {
@@ -299,7 +320,13 @@ export default function BoardView() {
   // we never move anyone between machines (the no-rebalancing invariant holds).
   const queueStats = queues.map((q) => {
     const list = byQueue.get(q.id) ?? [];
-    const tmr = computeSlotTimer(list, config.event_start_time, config.buffer_seconds);
+    const tmr = computeSlotTimer(
+      list,
+      config.event_start_time,
+      config.buffer_seconds,
+      now,
+      config.move_grace_seconds,
+    );
     const active = list.filter((p) => !DONE.has(p.status));
     const wasted =
       tmr.phase === "awaiting_checkin" &&
@@ -404,6 +431,8 @@ export default function BoardView() {
             list,
             config.event_start_time,
             config.buffer_seconds,
+            now,
+            config.move_grace_seconds,
           );
           const qHead = qTimer.head as Participant | null;
           const active = q.id === selectedQueue.id;

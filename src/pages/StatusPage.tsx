@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, getStatusByEmail } from "../lib/api";
 import { computeProjection } from "../lib/queueLogic";
-import { formatClock } from "../lib/format";
+import { formatClock, formatClockIso, formatDuration } from "../lib/format";
 import { useT } from "../lib/i18n";
-import { card } from "../lib/ui";
+import { card, statusPillClass } from "../lib/ui";
 import { useVisibilityPolling } from "../lib/usePolling";
 import {
   type AlertPermission,
@@ -98,6 +98,10 @@ export default function StatusPage() {
   const queue = result?.queue;
   const config = result?.config;
   const members = result?.queue_members;
+  // Show the full participation list only when this email ran/registered more
+  // than once (P—multi-signup). Single sign-ups keep the simpler view.
+  const history = result?.history ?? [];
+  const showHistory = history.length > 1;
 
   const projection =
     found && me && config && members
@@ -106,6 +110,8 @@ export default function StatusPage() {
           me,
           config.event_start_time,
           config.buffer_seconds,
+          Date.now(),
+          config.move_grace_seconds,
         )
       : null;
   const livePosition = projection?.livePosition ?? null;
@@ -382,6 +388,58 @@ export default function StatusPage() {
                 )}
               </dl>
             </div>
+
+            {/* Participation history — all results for multi-time runners. */}
+            {showHistory && (
+              <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+                <h2 className="text-sm font-semibold text-slate-900">
+                  {t("status.history.title", { n: history.length })}
+                </h2>
+                <ul className="mt-3 divide-y divide-slate-100">
+                  {history.map((h) => (
+                    <li key={h.id} className="py-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusPillClass(
+                              h.status,
+                            )}`}
+                          >
+                            {t(`st.${h.status}`)}
+                          </span>
+                          {h.id === me?.id && (
+                            <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand">
+                              {t("status.history.current")}
+                            </span>
+                          )}
+                        </div>
+                        {h.status === "finished" && h.distance_logged !== null && (
+                          <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">
+                            {t("lb.meters", { n: h.distance_logged })}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        {[
+                          h.queue_name,
+                          formatDuration(h.run_duration_seconds),
+                          h.actual_finish
+                            ? t("status.history.finishedAt", {
+                                time: formatClockIso(h.actual_finish),
+                              })
+                            : null,
+                          h.gift_name
+                            ? t("status.finished.gift", { gift: h.gift_name })
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Refresh + last-updated */}
             <div className="flex items-center justify-between">
