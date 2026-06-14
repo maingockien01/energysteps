@@ -207,6 +207,40 @@ describe("computeProjection", () => {
     expect(proj.projectedStartMs).toBeNull();
     expect(proj.livePosition).toBeNull();
   });
+
+  it("does NOT flag a delay for a late signup onto a drained machine (board says up next)", () => {
+    // Repro of the page-vs-board divergence: everyone ahead has finished long
+    // ago, then someone signs up onto the now-idle machine with NO original
+    // estimate. The idle-machine rule re-anchors their slot to created_at+grace
+    // (≈ now), which the board renders as "up next" — so the status page must
+    // NOT report the hour-long idle gap as a delay.
+    const lastFinish = new Date(startMs + 90 * 60 * 1000).toISOString(); // +90 min
+    const lateJoin = new Date(startMs + 91 * 60 * 1000).toISOString(); // signs up after
+    const q = [
+      entry({
+        position_in_queue: 1,
+        status: "finished",
+        actual_finish: lastFinish,
+        original_estimated_start: START,
+      }),
+      entry({
+        position_in_queue: 2,
+        run_duration_seconds: 300,
+        status: "signed_up",
+        original_estimated_start: null, // late signup — no promised time
+        created_at: lateJoin,
+      }),
+    ];
+    const grace = 180;
+    const proj = computeProjection(q, q[1], START, buffer, grace);
+    // Slot re-anchored to created_at + grace, matching the board's slot timer.
+    expect(proj.livePosition).toBe(1);
+    expect(proj.projectedStartMs).toBe(Date.parse(lateJoin) + grace * 1000);
+    expect(effectiveAnchorMs(q, START, grace)).toBe(proj.projectedStartMs);
+    // No original to fall behind → not delayed (was a ~90-min bogus delay before).
+    expect(proj.isDelayed).toBe(false);
+    expect(proj.delayMinutes).toBe(0);
+  });
 });
 
 describe("computeSlotTimer", () => {

@@ -56,21 +56,34 @@ export default function StatusPage() {
     return t(`status.s.${status}`);
   }
 
+  // Monotonic request token. The poll (30s), the on-focus refetch, and the
+  // manual Refresh button all call fetchStatus into the SAME setResult, with no
+  // guarantee they resolve in the order they were issued. Since this is live
+  // queue data, an older in-flight response landing last would clobber fresher
+  // state (e.g. show "position 2" after the runner already advanced to "up
+  // next"). We stamp each call and only let the latest one write.
+  const reqIdRef = useRef(0);
+
   // Fetch status for a given email. Used by the form, the manual Refresh
-  // button, and the realtime subscription.
+  // button, the poll, and the on-focus refetch.
   const fetchStatus = useCallback(
     async (email: string) => {
+      const reqId = ++reqIdRef.current;
       setLoading(true);
       setErrorMsg(null);
       try {
         const data = await getStatusByEmail(email);
+        if (reqId !== reqIdRef.current) return; // superseded by a newer fetch
         setResult(data);
         setLastUpdated(Date.now());
       } catch (e) {
+        if (reqId !== reqIdRef.current) return; // superseded; don't surface a stale error
         if (e instanceof ApiError) setErrorMsg(t(`error.${e.code}`));
         else setErrorMsg(t("common.wrong"));
       } finally {
-        setLoading(false);
+        // Only the latest request owns the loading flag, so an early-resolving
+        // older request can't flip the spinner off while a newer one runs.
+        if (reqId === reqIdRef.current) setLoading(false);
       }
     },
     [t],

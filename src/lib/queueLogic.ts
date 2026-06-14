@@ -157,10 +157,21 @@ export function computeProjection(
     }
   }
 
+  // "Delayed" only means something relative to a PROMISE — the original estimate
+  // captured at event start. A runner with no original (signed up AFTER the event
+  // started, e.g. onto a drained/idle machine) was never promised an earlier
+  // time: the idle-machine rule re-anchors their slot forward to
+  // `created_at + moveGrace`, which the moderator board correctly renders as "up
+  // next now". Comparing that re-anchored slot against the provisional
+  // event-start baseline would report the entire idle gap (often an hour+) as a
+  // bogus delay — contradicting the board. So flag a delay ONLY when there is a
+  // real original to fall behind. (When originalStartMs is non-null,
+  // baselineStartMs === originalStartMs, so this matches the previous behavior
+  // for runners who DO have a promise.)
   let isDelayed = false;
   let delayMinutes = 0;
-  if (projectedStartMs !== null && baselineStartMs !== null) {
-    const deltaMs = projectedStartMs - baselineStartMs;
+  if (projectedStartMs !== null && originalStartMs !== null) {
+    const deltaMs = projectedStartMs - originalStartMs;
     if (deltaMs > 30_000) {
       // ignore sub-30s noise
       isDelayed = true;
