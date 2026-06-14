@@ -11,6 +11,7 @@ import {
 } from "../lib/notify";
 import { unlockAudio } from "../lib/sound";
 import { setRecentEmail } from "../lib/recentEmail";
+import { downloadIcs, googleCalendarUrl, outlookCalendarUrl } from "../lib/calendar";
 import type { Gift, SignUpResult } from "../lib/types";
 
 interface PublicConfig {
@@ -201,6 +202,15 @@ export default function SignUpPage() {
                     </option>
                   ))}
                 </select>
+                {/* Show which gift this duration tier carries, so the choice is
+                    informed before they commit (not revealed only afterward). */}
+                {gifts.some((g) => g.duration_seconds === durationSeconds) && (
+                  <span className="mt-1.5 block rounded-lg bg-brand/5 px-3 py-2 text-sm font-medium text-brand ring-1 ring-brand/15">
+                    {t("signup.duration.giftHint", {
+                      gift: gifts.find((g) => g.duration_seconds === durationSeconds)!.name,
+                    })}
+                  </span>
+                )}
               </Field>
             </div>
 
@@ -348,6 +358,23 @@ function ConfirmationCard({
     windowText = `${formatClockIso(start)} – ${formatClockIso(new Date(endMs).toISOString())}`;
   }
 
+  // Calendar reminder spans the whole turn (check-in buffer + run) so a default
+  // 10-min-before alert fires even with the app closed — the one reminder path
+  // that survives a locked phone. Covers both phone and laptop sign-ups.
+  const calStartMs = start ? Date.parse(start) : null;
+  const calEvent =
+    calStartMs !== null
+      ? {
+          title: t("cal.title"),
+          details: t("cal.details", { url: `${window.location.origin}/status` }),
+          location: result.queue.name,
+          startMs: calStartMs,
+          endMs:
+            calStartMs +
+            (result.buffer_seconds + result.participant.run_duration_seconds) * 1000,
+        }
+      : null;
+
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
@@ -378,6 +405,37 @@ function ConfirmationCard({
           <p className="mt-1 text-sm text-slate-500">{t("confirm.noWindow")}</p>
         )}
       </div>
+
+      {calEvent && (
+        <div className="mt-5">
+          <p className="text-xs font-medium text-slate-500">{t("cal.addLabel")}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <a
+              href={googleCalendarUrl(calEvent)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
+            >
+              {t("cal.googleBtn")}
+            </a>
+            <a
+              href={outlookCalendarUrl(calEvent)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
+            >
+              {t("cal.outlookBtn")}
+            </a>
+            <button
+              type="button"
+              onClick={() => downloadIcs(calEvent)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50"
+            >
+              {t("cal.icsBtn")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {giftNudge && (
         <p className="mt-5 rounded-xl bg-brand/5 px-4 py-3 text-sm font-medium text-brand ring-1 ring-brand/20">

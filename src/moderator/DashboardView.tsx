@@ -5,7 +5,8 @@
 import { useEffect, useState } from "react";
 import { useModerator } from "./context";
 import { moderatorGetActionLog } from "../lib/api";
-import { formatClockIso } from "../lib/format";
+import { formatClock, formatClockIso } from "../lib/format";
+import { computePaceForecast } from "../lib/forecast";
 import { useT } from "../lib/i18n";
 import { card } from "../lib/ui";
 import type { ActionLogEntry } from "../lib/types";
@@ -38,6 +39,12 @@ export default function DashboardView() {
   const t = useT();
   const { state, pin } = useModerator();
   const [log, setLog] = useState<ActionLogEntry[] | null>(null);
+  // Ticks the pace forecast forward without waiting for a state change.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +65,7 @@ export default function DashboardView() {
     return <div className="text-slate-400">{t("common.loading")}</div>;
   }
 
+  const forecast = computePaceForecast(state, nowMs);
   const ps = state.participants;
   const total = ps.length;
   const finished = ps.filter((p) => p.status === "finished");
@@ -100,6 +108,50 @@ export default function DashboardView() {
         </div>
         <p className="mt-2 text-xs text-slate-400">{t("dash.utilizationHint")}</p>
       </div>
+
+      <section className={card}>
+        <h2 className="text-lg font-semibold text-brand">{t("dash.forecastTitle")}</h2>
+        {forecast.status === "no_start" ? (
+          <p className="mt-2 text-sm text-slate-500">{t("forecast.noStart")}</p>
+        ) : forecast.status === "done" ? (
+          <p className="mt-2 text-sm font-medium text-emerald-700">{t("forecast.done")}</p>
+        ) : forecast.status === "gathering" ? (
+          <p className="mt-2 text-sm text-slate-500">{t("forecast.gathering")}</p>
+        ) : (
+          <div className="mt-2 space-y-2">
+            {forecast.endMs === null ? (
+              <p className="text-sm font-medium text-slate-800">
+                {t("forecast.noEnd", { time: formatClock(forecast.projectedEndMs) })}
+              </p>
+            ) : forecast.willOverrun ? (
+              <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-300">
+                <p className="font-semibold">
+                  <span aria-hidden>⚠ </span>
+                  {t("forecast.overrun", {
+                    time: formatClock(forecast.projectedEndMs),
+                    n: forecast.overByMin,
+                    end: formatClock(forecast.endMs),
+                  })}
+                </p>
+                {forecast.atRiskCount > 0 && (
+                  <p className="mt-1">{t("forecast.atRisk", { n: forecast.atRiskCount })}</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-emerald-700">
+                <span aria-hidden>✓ </span>
+                {t("forecast.onTrack", {
+                  time: formatClock(forecast.projectedEndMs),
+                  end: formatClock(forecast.endMs),
+                })}
+              </p>
+            )}
+            <p className="text-xs text-slate-400">
+              {t("forecast.remainingNote", { n: forecast.remaining })} · {t("forecast.estimateNote")}
+            </p>
+          </div>
+        )}
+      </section>
 
       <section className={card}>
         <h2 className="text-lg font-semibold text-brand">{t("dash.distanceTitle")}</h2>

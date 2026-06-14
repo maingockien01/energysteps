@@ -16,10 +16,12 @@ import {
   moderatorUndoCheckOut,
 } from "../lib/api";
 import {
+  formatClock,
   formatClockIso,
   formatCountdown,
   formatDuration,
 } from "../lib/format";
+import { computePaceForecast } from "../lib/forecast";
 import { useT } from "../lib/i18n";
 import { playChime, unlockAudio } from "../lib/sound";
 import { statusPillClass } from "../lib/ui";
@@ -363,6 +365,10 @@ export default function BoardView() {
 
   const undoVisible = lastAction !== null && now - lastAction.at < UNDO_WINDOW_MS;
 
+  // Pace forecast — surfaced on the board only as an actionable warning (when
+  // we're projected to miss the end time); the Dashboard carries the full read.
+  const forecast = computePaceForecast(state, now);
+
   return (
     <div className="space-y-6">
       {/* Per-station selector (P1-4) */}
@@ -414,6 +420,25 @@ export default function BoardView() {
               ))}
           </ul>
           <p className="mt-2 text-xs text-amber-700">{t("board.idleHint")}</p>
+        </div>
+      )}
+
+      {/* Pace warning — only when projected to miss the event end time. */}
+      {forecast.status === "ready" && forecast.willOverrun && (
+        <div role="status" className="rounded-2xl bg-amber-50 p-4 shadow-sm ring-1 ring-amber-300">
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+            <span aria-hidden>⚠</span>{" "}
+            {t("forecast.overrun", {
+              time: formatClock(forecast.projectedEndMs),
+              n: forecast.overByMin,
+              end: formatClock(forecast.endMs),
+            })}
+          </div>
+          {forecast.atRiskCount > 0 && (
+            <p className="mt-1 text-sm text-amber-900">
+              {t("forecast.atRisk", { n: forecast.atRiskCount })}
+            </p>
+          )}
         </div>
       )}
 

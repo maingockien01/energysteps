@@ -6,7 +6,7 @@ import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { getLeaderboard } from "../lib/api";
 import { DOMAINS } from "../lib/domains";
-import { formatClock, formatDuration } from "../lib/format";
+import { formatClock } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { card } from "../lib/ui";
 import { useVisibilityPolling } from "../lib/usePolling";
@@ -15,6 +15,10 @@ import type { DepartmentTotal, LeaderboardEntry, LeaderboardResult } from "../li
 function medal(rank: number): string {
   return rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `${rank}`;
 }
+
+// Jump-link chip (same look as the moderator Guide's section chips).
+const chipClass =
+  "rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm ring-1 ring-slate-200 transition hover:bg-brand hover:text-white";
 
 export default function LeaderboardPage() {
   const t = useT();
@@ -58,16 +62,32 @@ export default function LeaderboardPage() {
   // "walk to recharge"), and gives 0-km departments a stake in the headline.
   const totalDistance = departments.reduce((a, d) => a + d.total_distance, 0);
 
-  // Categorize individuals by chosen run duration (ascending) — distance is only
-  // comparable within the same run length. Each tier is already distance-sorted
-  // by the RPC.
-  const tiers = new Map<number, LeaderboardEntry[]>();
+  // Top contributors per department: recognition is kept (handles), but
+  // organized under each department so individual effort reads as team
+  // contribution. Ranked by raw distance — which IS each person's contribution
+  // to the department total (durations mix here on purpose; the total mixes them
+  // too). Replaces the old duration-tier individual ranking (a deliberate
+  // team-first trade-off: short-duration runners no longer get a separate
+  // podium).
+  const TOP_CONTRIBUTORS = 5;
+  const byDept = new Map<string, LeaderboardEntry[]>();
   for (const e of individuals) {
-    const list = tiers.get(e.duration) ?? [];
+    const list = byDept.get(e.department) ?? [];
     list.push(e);
-    tiers.set(e.duration, list);
+    byDept.set(e.department, list);
   }
-  const tierDurations = [...tiers.keys()].sort((a, b) => a - b);
+  const contributorGroups = departments
+    .map((d) => ({
+      department: d.department,
+      entries: (byDept.get(d.department) ?? [])
+        .slice()
+        .sort((a, b) => b.distance - a.distance)
+        .slice(0, TOP_CONTRIBUTORS),
+    }))
+    .filter((g) => g.entries.length > 0);
+
+  // Department progress bars (#3) — each bar relative to the leading department.
+  const maxDeptDistance = departments.reduce((m, d) => Math.max(m, d.total_distance), 0);
 
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-10">
@@ -87,6 +107,19 @@ export default function LeaderboardPage() {
           <div className={`${card} text-slate-400`}>{t("common.loading")}</div>
         ) : (
           <div className="space-y-6">
+            {/* Sticky jump-links: hop between the two boards without scrolling.
+                Stays reachable while reading a long contributors list. */}
+            {contributorGroups.length > 0 && (
+              <nav className="sticky top-0 z-10 flex flex-wrap gap-2 bg-slate-50/90 py-3 backdrop-blur">
+                <a href="#lb-departments" className={chipClass}>
+                  {t("lb.jumpDepartments")}
+                </a>
+                <a href="#lb-contributors" className={chipClass}>
+                  {t("lb.jumpContributors")}
+                </a>
+              </nav>
+            )}
+
             {/* Collective hero — total distance walked by everyone so far. */}
             {totalDistance > 0 && (
               <section className="rounded-2xl bg-brand p-5 text-center text-white shadow-sm">
@@ -100,75 +133,78 @@ export default function LeaderboardPage() {
             )}
             {/* Departments — the headline ranking. Every department shows, 0 if
                 no one has finished yet. */}
-            <section className={`${card} ring-2 ring-brand/30`}>
+            <section id="lb-departments" className={`${card} scroll-mt-16 ring-2 ring-brand/30`}>
               <div className="flex items-baseline justify-between">
                 <h2 className="text-xl font-bold text-brand">{t("lb.departments")}</h2>
                 <span className="text-xs text-slate-400">{t("lb.deptHint")}</span>
               </div>
               <ol className="mt-4 divide-y divide-slate-100">
                 {departments.map((d, i) => (
-                  <li
-                    key={d.department}
-                    className="flex items-center justify-between py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 text-center text-base font-bold text-slate-500">
-                        {medal(i + 1)}
-                      </span>
-                      <div>
-                        <div className="text-base font-semibold text-slate-900">
-                          {d.department}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {t("lb.finishers", { n: d.finishers })}
+                  <li key={d.department} className="py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="w-8 text-center text-base font-bold text-slate-500">
+                          {medal(i + 1)}
+                        </span>
+                        <div>
+                          <div className="text-base font-semibold text-slate-900">
+                            {d.department}
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            {t("lb.finishers", { n: d.finishers })}
+                          </div>
                         </div>
                       </div>
+                      <span className="font-mono text-base font-bold tabular-nums text-slate-900">
+                        {t("lb.meters", { n: d.total_distance })}
+                      </span>
                     </div>
-                    <span className="font-mono text-base font-bold tabular-nums text-slate-900">
-                      {t("lb.meters", { n: d.total_distance })}
-                    </span>
+                    {maxDeptDistance > 0 && (
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-brand"
+                          style={{
+                            width: `${(d.total_distance / maxDeptDistance) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    )}
                   </li>
                 ))}
               </ol>
             </section>
 
-            {/* Individuals, categorized by run duration. The tier-fairness note
-                lives here (where the categories appear), so the subtitle is free
-                to carry the motivational framing. */}
-            <div className="px-1 pt-2">
+            {/* Top contributors, grouped by department: recognition kept, but
+                framed as each person's contribution to their team's total. */}
+            <div id="lb-contributors" className="scroll-mt-16 px-1 pt-2">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                {t("lb.individuals")}
+                {t("lb.contributors")}
               </h2>
-              <p className="mt-0.5 text-xs text-slate-400">{t("lb.individualsHint")}</p>
+              <p className="mt-0.5 text-xs text-slate-400">{t("lb.contributorsHint")}</p>
             </div>
-            {tierDurations.length === 0 ? (
+            {contributorGroups.length === 0 ? (
               <div className={`${card} text-slate-600`}>{t("lb.empty")}</div>
             ) : (
-              tierDurations.map((dur) => (
-                <section key={dur} className={card}>
+              contributorGroups.map((g) => (
+                <section key={g.department} className={card}>
                   <div className="flex items-baseline justify-between">
-                    <h3 className="text-lg font-semibold text-brand">
-                      {t("lb.category", { d: formatDuration(dur) })}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-brand">{g.department}</h3>
                     <span className="text-xs text-slate-400">
-                      {t("lb.finishers", { n: tiers.get(dur)!.length })}
+                      {t("lb.finishers", { n: g.entries.length })}
                     </span>
                   </div>
                   <ol className="mt-3 divide-y divide-slate-100">
-                    {tiers.get(dur)!.map((e, i) => (
+                    {g.entries.map((e, i) => (
                       <li
-                        key={`${dur}-${e.display_name}-${i}`}
+                        key={`${g.department}-${e.display_name}-${i}`}
                         className="flex items-center justify-between py-2.5"
                       >
                         <div className="flex items-center gap-3">
                           <span className="w-8 text-center text-sm font-semibold text-slate-500">
                             {medal(i + 1)}
                           </span>
-                          <div>
-                            <div className="text-sm font-medium text-slate-900">
-                              {e.display_name}
-                            </div>
-                            <div className="text-xs text-slate-500">{e.department}</div>
+                          <div className="text-sm font-medium text-slate-900">
+                            {e.display_name}
                           </div>
                         </div>
                         <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">
