@@ -48,6 +48,9 @@ export interface Participant {
   distance_logged: number | null;
   gift_id: string | null;
   waitlisted: boolean; // P0-2: projected finish past event end; not promised
+  // Run length (seconds) granted at a LATE (post-buffer) check-in, measured from
+  // actual_start. null = normal check-in. See migration 0017 / queueLogic.
+  granted_run_seconds: number | null;
   created_at: string;
 }
 
@@ -60,6 +63,8 @@ export interface QueueMember {
   original_estimated_start: string | null;
   actual_start: string | null;
   actual_finish: string | null;
+  // Run length granted at a late check-in (re-anchors the slot). null = normal.
+  granted_run_seconds: number | null;
   created_at: string; // sign-up time — drives the idle-machine move grace (#7)
 }
 
@@ -171,4 +176,5 @@ export type ApiErrorCode =
   | "UNDO_NOT_APPLICABLE"
   | "QUEUE_NOT_FREE"
   | "NOT_FOUND"
+  | "NOT_CHECKED_IN"
   | "UNKNOWN";

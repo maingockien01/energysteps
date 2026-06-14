@@ -21,6 +21,9 @@ export interface QueueEntry {
   actual_start: string | null;
   actual_finish: string | null;
   original_estimated_start: string | null;
+  // Run length (seconds) granted at a LATE check-in, measured from actual_start.
+  // null = normal check-in (slot uses buffer + run_duration off the anchor).
+  granted_run_seconds: number | null;
   // Sign-up time — the fixed reference for the idle-machine move grace (#7).
   created_at: string;
 }
@@ -89,6 +92,18 @@ export function activeOrdered(queue: QueueEntry[]): QueueEntry[] {
     .sort((a, b) => a.position_in_queue - b.position_in_queue);
 }
 
+// When a runner is checked in LATE with a moderator-granted run length (request:
+// adjustable run time on auto check-in), their slot is RE-ANCHORED to their
+// actual check-in and runs for exactly the granted seconds — no buffer, since
+// they're already here. This returns when that runner frees the machine (ms), or
+// null for everyone on the normal model. Both the board slot timer and the
+// status projection use it so the two surfaces stay in agreement.
+export function grantedSlotEndMs(e: QueueEntry): number | null {
+  if (e.status !== "checked_in" || e.granted_run_seconds == null) return null;
+  const start = ts(e.actual_start);
+  return start === null ? null : start + e.granted_run_seconds * 1000;
+}
+
 export interface Projection {
   // Live projected check-in time for the target entry (ms epoch), or null if
   // it cannot be computed yet (no event start time, or target already done).
@@ -136,11 +151,18 @@ export function computeProjection(
   const anchor = effectiveAnchorMs(queue, eventStartTime, moveGraceSeconds);
   let projectedStartMs: number | null = null;
   if (anchor !== null) {
-    let acc = anchor;
+    // Walk the runners ahead, accumulating when the machine next frees. A
+    // late-checked-in runner with a granted run re-anchors the line to their
+    // check-in + granted (an absolute time), instead of adding buffer + run.
+    let free = anchor;
     for (let i = 0; i < idx; i++) {
-      acc += (active[i].run_duration_seconds + bufferSeconds) * 1000;
+      const granted = grantedSlotEndMs(active[i]);
+      free =
+        granted !== null
+          ? granted
+          : free + (active[i].run_duration_seconds + bufferSeconds) * 1000;
     }
-    projectedStartMs = acc;
+    projectedStartMs = free;
   }
 
   // Baseline = stored original estimate if we have it, else a provisional one
@@ -222,6 +244,21 @@ export function computeSlotTimer(
       anchorMs: null,
       checkInDeadlineMs: null,
       slotEndMs: null,
+    };
+  }
+
+  // A late-checked-in head with a granted run is re-anchored to their actual
+  // check-in: the run clock counts the granted seconds from then (no buffer —
+  // they're already here). This needs no event start time / prior checkout.
+  const grantedEnd = grantedSlotEndMs(head);
+  if (grantedEnd !== null) {
+    const startMs = ts(head.actual_start)!; // non-null since grantedEnd computed
+    return {
+      phase: "running",
+      head,
+      anchorMs: startMs,
+      checkInDeadlineMs: startMs, // window closed at check-in
+      slotEndMs: grantedEnd,
     };
   }
 

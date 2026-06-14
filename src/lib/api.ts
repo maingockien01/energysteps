@@ -30,6 +30,7 @@ const KNOWN_CODES: ApiErrorCode[] = [
   "UNDO_NOT_APPLICABLE",
   "QUEUE_NOT_FREE",
   "NOT_FOUND",
+  "NOT_CHECKED_IN",
 ];
 
 export class ApiError extends Error {
@@ -177,10 +178,18 @@ async function moderatorMutation(
   await broadcastChanged();
 }
 
-export function moderatorCheckIn(pin: string, participantId: string) {
+// `runSeconds` grants a custom run length on a LATE (post-buffer) check-in — the
+// slot re-anchors to now and runs that long (see migration 0017). Omit / null
+// for a normal in-window check-in (buffer + registered run, as before).
+export function moderatorCheckIn(
+  pin: string,
+  participantId: string,
+  runSeconds: number | null = null,
+) {
   return moderatorMutation("moderator_check_in", {
     p_pin: pin,
     p_participant_id: participantId,
+    p_run_seconds: runSeconds,
   });
 }
 

@@ -21,6 +21,7 @@ function entry(p: Partial<QueueEntry> & { position_in_queue: number }): QueueEnt
     actual_start: null,
     actual_finish: null,
     original_estimated_start: null,
+    granted_run_seconds: null,
     created_at: EARLY,
     ...p,
   };
@@ -208,6 +209,27 @@ describe("computeProjection", () => {
     expect(proj.livePosition).toBeNull();
   });
 
+  it("re-anchors the line behind a late check-in granted a custom run time", () => {
+    // Head was checked in LATE with a 4-min grant. The machine frees at their
+    // check-in + 4 min, NOT at anchor + buffer + run. The next runner's start
+    // must follow that re-anchor (and agree with the board slot timer).
+    const checkin = new Date(startMs + 500 * 1000).toISOString();
+    const q = [
+      entry({
+        position_in_queue: 1,
+        run_duration_seconds: 600,
+        status: "checked_in",
+        actual_start: checkin,
+        granted_run_seconds: 240, // 4 min granted
+      }),
+      entry({ position_in_queue: 2, run_duration_seconds: 300 }),
+    ];
+    const proj = computeProjection(q, q[1], START, buffer);
+    expect(proj.livePosition).toBe(2);
+    // next runner starts when the granted head frees the machine
+    expect(proj.projectedStartMs).toBe(Date.parse(checkin) + 240 * 1000);
+  });
+
   it("does NOT flag a delay for a late signup onto a drained machine (board says up next)", () => {
     // Repro of the page-vs-board divergence: everyone ahead has finished long
     // ago, then someone signs up onto the now-idle machine with NO original
@@ -274,6 +296,27 @@ describe("computeSlotTimer", () => {
     // anchored to the previous checkout, NOT to the late check-in
     expect(t.anchorMs).toBe(Date.parse(prevFinish));
     expect(t.slotEndMs).toBe(Date.parse(prevFinish) + (120 + 600) * 1000);
+  });
+
+  it("re-anchors a late-checked-in head to check-in + granted run (no buffer)", () => {
+    const prevFinish = new Date(startMs + 700 * 1000).toISOString();
+    const checkin = new Date(startMs + 1500 * 1000).toISOString(); // checked in late
+    const q = [
+      entry({ position_in_queue: 1, status: "finished", actual_finish: prevFinish }),
+      entry({
+        position_in_queue: 2,
+        run_duration_seconds: 600,
+        status: "checked_in",
+        actual_start: checkin,
+        granted_run_seconds: 180, // moderator granted 3 min
+      }),
+    ];
+    const t = computeSlotTimer(q, START, buffer);
+    expect(t.phase).toBe("running");
+    expect(t.anchorMs).toBe(Date.parse(checkin));
+    expect(t.checkInDeadlineMs).toBe(Date.parse(checkin));
+    // ends 3 min after check-in — buffer is NOT added (they're already here)
+    expect(t.slotEndMs).toBe(Date.parse(checkin) + 180 * 1000);
   });
 
   it("reports queue_complete when nobody is left", () => {

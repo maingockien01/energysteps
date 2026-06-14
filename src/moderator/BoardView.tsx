@@ -56,6 +56,9 @@ export default function BoardView() {
   const [skipGift, setSkipGift] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
+  // Moderator-adjusted run minutes for a LATE (auto-running) check-in, scoped to
+  // the head it was set for so it resets automatically when the head changes.
+  const [lateRun, setLateRun] = useState<{ id: string; min: number } | null>(null);
   // True once the moderator touches the gift controls during a check-out, so the
   // async backend gift suggestion can't overwrite their manual choice.
   const giftTouchedRef = useRef(false);
@@ -304,6 +307,30 @@ export default function BoardView() {
   const inCheckinWindow = timer.phase === "awaiting_checkin" && !checkInElapsed;
   const autoRunning = timer.phase === "awaiting_checkin" && checkInElapsed;
   const showRun = autoRunning || timer.phase === "running";
+
+  // Late check-in (auto-running): the moderator can still check the runner in and
+  // grant a run length. Default = run time left floored to a minute; min = the
+  // shortest configured run; max = what this runner registered for.
+  const shortestRunMin = config.allowed_run_durations.length
+    ? Math.max(1, Math.round(Math.min(...config.allowed_run_durations) / 60))
+    : 1;
+  const registeredRunMin = head ? Math.round(head.run_duration_seconds / 60) : shortestRunMin;
+  const lateDefaultMin = Math.min(
+    registeredRunMin,
+    Math.max(shortestRunMin, Math.floor(Math.max(runRemaining, 0) / 60)),
+  );
+  const lateRunMin = lateRun && head && lateRun.id === head.id ? lateRun.min : lateDefaultMin;
+  const setLateRunMinClamped = (min: number) => {
+    if (!head) return;
+    setLateRun({ id: head.id, min: Math.max(shortestRunMin, Math.min(registeredRunMin, min)) });
+  };
+  function onLateCheckIn() {
+    if (!head) return;
+    const h = head;
+    void run(() => moderatorCheckIn(pin, h.id, lateRunMin * 60)).then((ok) => {
+      if (ok) setLastAction({ id: h.id, kind: "check_in", name: h.name, at: Date.now() });
+    });
+  }
 
   const availableGifts = gifts.filter((g) => g.remaining_quantity > 0);
 
@@ -628,14 +655,68 @@ export default function BoardView() {
               )}
             </div>
 
+            {/* Late check-in: the buffer expired and the clock auto-started, but
+                the runner can still be checked in with an adjustable run time. */}
+            {autoRunning && (
+              <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200">
+                <div className="text-sm font-semibold text-emerald-900">
+                  {t("board.lateCheckin.title")}
+                </div>
+                <div className="mt-1 text-xs text-emerald-700">
+                  {t("board.lateCheckin.hint")}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-medium text-slate-700">
+                    {t("board.lateCheckin.runLabel")}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={busy || lateRunMin <= shortestRunMin}
+                      onClick={() => setLateRunMinClamped(lateRunMin - 1)}
+                      aria-label={t("board.lateCheckin.less")}
+                      className="h-9 w-9 rounded-lg bg-white text-lg font-bold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      −
+                    </button>
+                    <span className="min-w-[5rem] text-center text-base font-semibold tabular-nums text-slate-900">
+                      {formatDuration(lateRunMin * 60)}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy || lateRunMin >= registeredRunMin}
+                      onClick={() => setLateRunMinClamped(lateRunMin + 1)}
+                      aria-label={t("board.lateCheckin.more")}
+                      className="h-9 w-9 rounded-lg bg-white text-lg font-bold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={onLateCheckIn}
+                    className="rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {t("board.lateCheckin.button")}
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                disabled={busy}
-                onClick={openCheckout}
-                className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-50"
-              >
-                {t("board.checkOut")}
-              </button>
+              {/* No check-out until the runner is actually checked in. In the
+                  auto-running state they must be checked in first (above) or
+                  skipped. */}
+              {!autoRunning && (
+                <button
+                  disabled={busy}
+                  onClick={openCheckout}
+                  className="rounded-xl bg-brand px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-brand-dark disabled:opacity-50"
+                >
+                  {t("board.checkOut")}
+                </button>
+              )}
               <button
                 disabled={busy}
                 onClick={() => onSkip("skipped")}
