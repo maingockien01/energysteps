@@ -6,7 +6,7 @@ import { useCallback, useState } from "react";
 import { Link } from "react-router-dom";
 import { getLeaderboard } from "../lib/api";
 import { DOMAINS } from "../lib/domains";
-import { formatDuration } from "../lib/format";
+import { formatClock, formatDuration } from "../lib/format";
 import { useT } from "../lib/i18n";
 import { card } from "../lib/ui";
 import { useVisibilityPolling } from "../lib/usePolling";
@@ -20,10 +20,12 @@ export default function LeaderboardPage() {
   const t = useT();
   const [data, setData] = useState<LeaderboardResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const fetchBoard = useCallback(async () => {
     try {
       setData(await getLeaderboard());
+      setLastUpdated(Date.now());
     } catch {
       // leave previous data; transient errors self-heal on the next poll
     } finally {
@@ -52,6 +54,10 @@ export default function LeaderboardPage() {
         b.total_distance - a.total_distance || a.department.localeCompare(b.department),
     );
 
+  // Company-wide total — a collective hero that celebrates everyone (on-theme:
+  // "walk to recharge"), and gives 0-km departments a stake in the headline.
+  const totalDistance = departments.reduce((a, d) => a + d.total_distance, 0);
+
   // Categorize individuals by chosen run duration (ascending) — distance is only
   // comparable within the same run length. Each tier is already distance-sorted
   // by the RPC.
@@ -69,12 +75,29 @@ export default function LeaderboardPage() {
         <header className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-brand">{t("lb.title")}</h1>
           <p className="mt-1 text-sm text-slate-500">{t("lb.subtitle")}</p>
+          {lastUpdated !== null && (
+            <div className="mt-2 flex items-center justify-center gap-2 text-xs text-slate-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden />
+              {t("status.updated", { time: formatClock(lastUpdated) })}
+            </div>
+          )}
         </header>
 
         {loading && !data ? (
           <div className={`${card} text-slate-400`}>{t("common.loading")}</div>
         ) : (
           <div className="space-y-6">
+            {/* Collective hero — total distance walked by everyone so far. */}
+            {totalDistance > 0 && (
+              <section className="rounded-2xl bg-brand p-5 text-center text-white shadow-sm">
+                <div className="text-3xl font-extrabold tabular-nums">
+                  {t("lb.meters", { n: totalDistance })}
+                </div>
+                <div className="mt-1 text-sm font-medium text-white/90">
+                  {t("lb.collective")}
+                </div>
+              </section>
+            )}
             {/* Departments — the headline ranking. Every department shows, 0 if
                 no one has finished yet. */}
             <section className={`${card} ring-2 ring-brand/30`}>
@@ -109,10 +132,15 @@ export default function LeaderboardPage() {
               </ol>
             </section>
 
-            {/* Individuals, categorized by run duration */}
-            <h2 className="px-1 pt-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              {t("lb.individuals")}
-            </h2>
+            {/* Individuals, categorized by run duration. The tier-fairness note
+                lives here (where the categories appear), so the subtitle is free
+                to carry the motivational framing. */}
+            <div className="px-1 pt-2">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                {t("lb.individuals")}
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-400">{t("lb.individualsHint")}</p>
+            </div>
             {tierDurations.length === 0 ? (
               <div className={`${card} text-slate-600`}>{t("lb.empty")}</div>
             ) : (

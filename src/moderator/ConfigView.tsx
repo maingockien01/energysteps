@@ -263,6 +263,11 @@ export default function ConfigView() {
               value={bufferSeconds}
               onChange={(e) => setBufferSeconds(Number(e.target.value))}
             />
+            {bufferSeconds > 0 && (
+              <p className="mt-1 text-xs text-slate-500">
+                = {formatDuration(Math.max(0, Math.round(bufferSeconds)))}
+              </p>
+            )}
           </div>
 
           <div>
@@ -277,6 +282,11 @@ export default function ConfigView() {
               value={moveGraceSeconds}
               onChange={(e) => setMoveGraceSeconds(Number(e.target.value))}
             />
+            {moveGraceSeconds > 0 && (
+              <p className="mt-1 text-xs text-slate-500">
+                = {formatDuration(Math.max(0, Math.round(moveGraceSeconds)))}
+              </p>
+            )}
             <p className="mt-1 text-xs text-slate-500">{t("cfg.moveGraceHint")}</p>
           </div>
 

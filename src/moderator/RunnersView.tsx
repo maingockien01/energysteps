@@ -237,13 +237,20 @@ export default function RunnersView() {
                         {formatDateTimeNumericIso(p.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusPillClass(
-                            p.status,
-                          )}`}
-                        >
-                          {t(`st.${p.status}`)}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusPillClass(
+                              p.status,
+                            )}`}
+                          >
+                            {t(`st.${p.status}`)}
+                          </span>
+                          {p.waitlisted && p.status !== "finished" && (
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                              {t("status.waitlist.tag")}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button

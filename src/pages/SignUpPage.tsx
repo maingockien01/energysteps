@@ -10,6 +10,7 @@ import {
   requestNotificationPermission,
 } from "../lib/notify";
 import { unlockAudio } from "../lib/sound";
+import { setRecentEmail } from "../lib/recentEmail";
 import type { Gift, SignUpResult } from "../lib/types";
 
 interface PublicConfig {
@@ -98,6 +99,7 @@ export default function SignUpPage() {
         run_duration_seconds: durationSeconds,
       });
       setResult(res);
+      setRecentEmail(email.trim()); // so the status page can prefill + auto-look-up
     } catch (err) {
       if (err instanceof ApiError) {
         const msg = t(`error.${err.code}`);

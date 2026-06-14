@@ -13,6 +13,7 @@ import {
   showNotification,
 } from "../lib/notify";
 import { playChime, unlockAudio } from "../lib/sound";
+import { getRecentEmail, setRecentEmail } from "../lib/recentEmail";
 import type { ParticipantStatus, StatusResult } from "../lib/types";
 
 // Notify the runner once they're within this many places of the front.
@@ -20,8 +21,9 @@ const NOTIFY_THRESHOLD = 2;
 
 export default function StatusPage() {
   const t = useT();
-  // The text in the input box.
-  const [emailInput, setEmailInput] = useState("");
+  // The text in the input box. Prefilled from the last email this device signed
+  // up / looked up with, so returning participants don't have to retype it.
+  const [emailInput, setEmailInput] = useState(() => getRecentEmail());
   // The email we've actually looked up (drives refetch + realtime).
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
   const [result, setResult] = useState<StatusResult | null>(null);
@@ -74,9 +76,21 @@ export default function StatusPage() {
     e.preventDefault();
     const email = emailInput.trim();
     if (!email) return;
+    setRecentEmail(email); // remember for next visit (prefill + auto-look-up)
     setSubmittedEmail(email);
     void fetchStatus(email);
   }
+
+  // Auto-look-up on first load if we remember an email — a returning participant
+  // lands straight on their status instead of retyping. Runs once on mount.
+  useEffect(() => {
+    const saved = getRecentEmail().trim();
+    if (saved) {
+      setSubmittedEmail(saved);
+      void fetchStatus(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function onRefresh() {
     if (submittedEmail) void fetchStatus(submittedEmail);
@@ -213,6 +227,13 @@ export default function StatusPage() {
         {/* Status card */}
         {found && me && queue && projection && (
           <div className="mt-6 space-y-4">
+            {/* Live indicator: reassures the user the page refreshes itself, so
+                they don't reflexively hit the Refresh button at the bottom. */}
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden />
+              {t("status.autoUpdating")}
+            </div>
+
             {/* Post-run celebration (P2-1) */}
             {me.status === "finished" && (
               <div

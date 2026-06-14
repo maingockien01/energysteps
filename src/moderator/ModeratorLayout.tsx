@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ModeratorProvider, useModerator } from "./context";
-import { useT } from "../lib/i18n";
+import { LangToggle, useT } from "../lib/i18n";
 import { clearSessionPin } from "./session";
 
 // `labelKey` is an i18n key; route paths are kept stable (e.g. /runners) so
@@ -146,6 +146,7 @@ function ModeratorChrome() {
           </div>
           <div className="flex items-center gap-4">
             <StatusBar />
+            <LangToggle />
             <NavLink
               to="/moderator/guide"
               className={({ isActive }) =>

@@ -215,6 +215,13 @@ export default function BoardView() {
       setMsg(t("board.distanceNaN"));
       return;
     }
+    // Soft sanity guard: a distance far beyond what's physically possible in the
+    // run window is almost certainly a typo (e.g. 9999) that would skew the
+    // leaderboard. Warn and require an explicit confirm, but allow an override.
+    const softMaxKm = Math.max(5, (h.run_duration_seconds / 60) * 2);
+    if (distance > softMaxKm && !window.confirm(t("board.distanceSanity", { n: distance }))) {
+      return;
+    }
     // Gift is a required decision: a gift must be selected, or "no gift" ticked.
     if (!skipGift && giftInput === "") {
       setMsg(t("board.giftRequired"));
@@ -521,7 +528,10 @@ export default function BoardView() {
               <div className="text-sm text-slate-500">{t("board.autoStartNote")}</div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            {/* Primary action stays prominent; the queue-advancing actions
+                (no-show / skip) are smaller and pushed to the right so they
+                aren't mis-tapped under time pressure. */}
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 disabled={busy}
                 onClick={onCheckIn}
@@ -529,21 +539,23 @@ export default function BoardView() {
               >
                 {t("board.checkIn")}
               </button>
-              <button
-                disabled={busy}
-                onClick={() => onSkip("no_show")}
-                className="rounded-xl bg-white px-5 py-2.5 font-semibold text-red-700 ring-1 ring-red-300 hover:bg-red-50 disabled:opacity-50"
-              >
-                {t("board.noShow")}
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => onSkip("skipped")}
-                className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
-              >
-                {t("board.skip")}
-              </button>
               {renderMove(head)}
+              <div className="flex gap-2 sm:ml-auto">
+                <button
+                  disabled={busy}
+                  onClick={() => onSkip("no_show")}
+                  className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-300 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {t("board.noShow")}
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => onSkip("skipped")}
+                  className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {t("board.skip")}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -591,7 +603,7 @@ export default function BoardView() {
               )}
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 disabled={busy}
                 onClick={openCheckout}
@@ -602,7 +614,7 @@ export default function BoardView() {
               <button
                 disabled={busy}
                 onClick={() => onSkip("skipped")}
-                className="rounded-xl bg-white px-5 py-2.5 font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50"
+                className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 disabled:opacity-50 sm:ml-auto"
               >
                 {t("board.skip")}
               </button>

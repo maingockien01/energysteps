@@ -89,13 +89,16 @@ export default function DashboardView() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat value={String(total)} label={t("dash.signups")} tone="slate" />
-        <Stat value={pct(finished.length, total)} label={t("dash.completion")} tone="emerald" />
-        <Stat value={pct(noShow, total)} label={t("dash.noShow")} tone="red" />
-        <Stat value={String(running)} label={t("dash.running")} tone="emerald" />
-        <Stat value={String(waitlisted)} label={t("dash.waitlisted")} tone="amber" />
-        <Stat value={utilization} label={t("dash.utilization")} tone="slate" />
+      <div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <Stat value={String(total)} label={t("dash.signups")} tone="slate" />
+          <Stat value={pct(finished.length, total)} label={t("dash.completion")} tone="emerald" />
+          <Stat value={pct(noShow, total)} label={t("dash.noShow")} tone="red" />
+          <Stat value={String(running)} label={t("dash.running")} tone="emerald" />
+          <Stat value={String(waitlisted)} label={t("dash.waitlisted")} tone="amber" />
+          <Stat value={utilization} label={t("dash.utilization")} tone="slate" />
+        </div>
+        <p className="mt-2 text-xs text-slate-400">{t("dash.utilizationHint")}</p>
       </div>
 
       <section className={card}>
